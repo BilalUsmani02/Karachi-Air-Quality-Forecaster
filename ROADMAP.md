@@ -2,7 +2,7 @@
 
 > Phase-by-phase build plan. Work top to bottom; tick tasks as they are done.
 > The **what** and **why** live in [`PROJECT_SPEC.md`](PROJECT_SPEC.md) — this file is the **when** and **in what order**.
-> Last updated: 21 October 2026
+> Last updated: 21 October 2026 · **Deadline: ASAP — Core only, no stretch until reports are drafted.**
 
 ---
 
@@ -10,7 +10,7 @@
 
 | Phase | Name | Status | Started | Finished |
 |---|---|---|---|---|
-| 0 | Setup | 🟨 In progress | 21 Oct 2026 | |
+| 0 | Setup | ✅ Done | 21 Oct 2026 | 21 Oct 2026 |
 | 1 | Data | ⛔ Blocked (sensor history key) | 21 Oct 2026 | |
 | 2 | Clean + features | ⬜ Not started | | |
 | 3 | Baselines | ⬜ Not started | | |
@@ -34,8 +34,8 @@ Phase 4, which can start as soon as Phase 2 is done (it is the slowest; run it a
 **Effort:** 1–2 days · **Spec:** §11, §13
 
 - [x] Instructor approval for the shared project (confirmed by Bilal, 21 Oct 2026)
-- [ ] Add the official PAI brief to `docs/briefs/` and re-check spec §2.1
-- [ ] Record deadlines in spec §14 and group members in spec §11.1
+- [x] PAI brief — none exists; `PAI_Overview_original.docx` is the reference
+- [x] Deadlines: ASAP (Core only). Group members: added at the end, in Phase 8
 - [x] Create the repo (Bilal) and connect this folder to it — github.com/BilalUsmani02/Karachi-Air-Quality-Forecaster
 - [x] `.gitignore` (excludes `data/`, `models/`, `.venv/`, caches, `.env`)
 - [x] Create the folder layout from spec §13 (+ `models/`, `results/`, `src/config.py`)
@@ -242,6 +242,7 @@ Phase 4, which can start as soon as Phase 2 is done (it is the slowest; run it a
 - [ ] Traceability table (spec §3): every row points to real code / section
 - [ ] Coverage ≥80% on `src/`
 - [ ] Viva prep for every member: inputs/outputs, why each model over alternatives, real-life use
+- [ ] Fill group members + ownership in spec §11.1
 - [ ] Slides (if required)
 - [ ] Final tidy: README, requirements pinned, results reproducible
 

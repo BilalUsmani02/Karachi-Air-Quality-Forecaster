@@ -54,8 +54,8 @@ the other way round.
 
 ### 2.1 PAI (CT-264) — Semester Project
 
-Source: `docs/briefs/PAI_Overview_original.docx` (our own overview; no official PAI brief was
-in the folder — **add it to `docs/briefs/` when available and re-check this section**).
+Source: `docs/briefs/PAI_Overview_original.docx`. **There is no official PAI brief** — this
+overview is the agreed reference for PAI (confirmed 21 Oct 2026).
 
 | # | Requirement |
 |---|---|
@@ -406,7 +406,7 @@ A small rule base, run by forward chaining (rules fire when their conditions mat
 
 ### 11.1 Group and ownership
 
-Fill in per course (groups may differ between PAI and AIES).
+Filled in at the end of the project (decided 21 Oct 2026). Groups may differ between PAI and AIES.
 
 | Member | Roll no. | Course(s) | Owns |
 |---|---|---|---|
@@ -503,7 +503,8 @@ Detailed phase-by-phase tasks and progress tracking: [`ROADMAP.md`](ROADMAP.md).
 12. **Only then** stretch items: GBM, stacking, NumPy softmax classifier, hourly horizons,
     KernelExplainer cross-check.
 
-Deadlines: **TBD** — add each course's due date here.
+Deadlines: **as soon as possible** for all three courses (no fixed dates). Build **Core only**;
+stretch items (Phase 9) only if time is left after the reports are drafted.
 
 ---
 
@@ -514,5 +515,5 @@ Deadlines: **TBD** — add each course's due date here.
 - [x] Forecast horizon — **decided:** next-day 24-h mean (hourly = stretch, chart only).
 - [x] One project for all three courses — **decided** (Bilal, 21 Oct 2026).
 - [x] Instructor approval for the shared project — **approved** (21 Oct 2026).
-- [ ] Official PAI brief and deadline — add to `docs/briefs/`.
-- [ ] AIES and AIES Lab deadlines and group members (§11.1).
+- [x] PAI brief — none exists; the overview is the reference. Deadline: ASAP.
+- [x] Deadlines — ASAP for all three. Group members — added at the end (§11.1).
