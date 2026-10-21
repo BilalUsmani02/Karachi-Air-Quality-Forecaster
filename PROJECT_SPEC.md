@@ -9,8 +9,8 @@
 ## 1. What we are making
 
 A tool that forecasts how polluted the air in Karachi will be **tomorrow**. It predicts the
-**24-hour average** level of fine dust particles (**PM2.5**, µg/m³) at the 9 real sensors
-run by **The Urban Unit** *(operator name to verify — see §11)*, sorts each forecast into an
+**24-hour average** level of fine dust particles (**PM2.5**, µg/m³) at the real sensors
+(8 online as of Oct 2026) run by **The Urban Unit**, sorts each forecast into an
 air-quality band (Good → Hazardous), and gives plain health advice for it.
 
 At its heart is a **neural network written entirely by hand in NumPy** (no deep-learning
@@ -207,9 +207,9 @@ models. Bands, rules and SHAP make the output usable in a Streamlit app.
 
 | # | Source | Type | Role | Status |
 |---|---|---|---|---|
-| D1 | **The Urban Unit** low-cost PM2.5 sensors, Karachi (9 sensors) | Time series, per sensor | **Target** (what we predict) + lag features | Access method TBD |
-| D2 | **Weather** — e.g. Open-Meteo historical/forecast API (temperature, humidity, wind speed & direction, pressure, rain, boundary-layer height) | Time series, gridded | Input features | To confirm |
-| D3 | **Modelled pollution** — e.g. CAMS via the Open-Meteo Air Quality API (PM2.5, PM10, NO₂, dust) | Time series, gridded | Input features | To confirm |
+| D1 | **The Urban Unit** low-cost PM2.5 sensors (AirGradient devices), Karachi — operator confirmed 21 Oct 2026 | Time series, per sensor | **Target** (what we predict) + lag features | Live readings public (AirGradient API, no key). **History needs a key** — owner token (Urban Unit) or OpenAQ mirror (free key). See §5.2 |
+| D2 | **Weather** — Open-Meteo Historical Weather API (`archive-api.open-meteo.com`; temperature, humidity, wind speed & direction, pressure, rain, boundary-layer height) | Time series, gridded | Input features | ✅ Works without key (tested 21 Oct 2026) |
+| D3 | **Modelled pollution** — CAMS via the Open-Meteo Air Quality API (`air-quality-api.open-meteo.com`; PM2.5, PM10, NO₂, dust) | Time series, gridded | Input features | ✅ Works without key (tested 21 Oct 2026) |
 | D4 | **Health-advice knowledge** — US EPA AQI guidance, WHO 2021 air quality guidelines | Documents | Expert-system rule base | — |
 
 Record for each: URL, licence, date range, time step, number of rows, and the date downloaded.
@@ -222,19 +222,25 @@ alone to meet the requirement.
 
 ### 5.2 Sensor locations
 
-| ID | Site | Lat / Lon |
-|---|---|---|
-| S1 | NED University, Main Campus | TBD |
-| S2 | Aga Khan University (sensor 1) | TBD |
-| S3 | Aga Khan University (sensor 2) | TBD |
-| S4 | Orangi Pilot Project | TBD |
-| S5 | Urban Resource Center | TBD |
-| S6 | Gulistan-e-Johar | TBD |
-| S7 | Climate Action Center | TBD |
-| S8 | Solid Waste Management | TBD |
-| S9 | G3 Engineering | TBD |
+Source: AirGradient public API (`/public/api/v1/world/locations/measures/current`), contributor
+"The Urban Unit", checked 21 Oct 2026. These 8 were online; IDs are AirGradient location IDs.
 
-Fill in coordinates from the sensor metadata. Weather and modelled data are pulled per coordinate.
+| ID | Site | AirGradient ID | Lat / Lon |
+|---|---|---|---|
+| S1 | NED University, Main Campus | 162732 | 24.9338, 67.1135 |
+| S2 | Aga Khan University, Main Campus | 162672 | 24.8924, 67.0747 |
+| S3 | Orangi Pilot Project | 162802 | 24.9373, 67.0190 |
+| S4 | Urban Resource Center | 162379 | 24.8680, 67.0818 |
+| S5 | Gulistan-e-Johar | 162753 | 24.9162, 67.1315 |
+| S6 | Climate Action Center | 162364 | 24.8638, 67.0566 |
+| S7 | Malir Cantonment, Askari 5 | 162762 | 24.9396, 67.1810 |
+| S8 | Clifton | 206703 | 24.8103, 67.0321 |
+
+**Not online on 21 Oct 2026** (in the original overview): Aga Khan University sensor 2,
+Solid Waste Management, G3 Engineering. Include them if their history turns up in D1; otherwise
+the project uses the 8 above. Final count depends on how much history each sensor has.
+
+Weather and modelled data are pulled per coordinate (Open-Meteo snaps to its nearest grid cell).
 
 ### 5.3 Pre-processing
 
@@ -390,7 +396,7 @@ A small rule base, run by forward chaining (rules fire when their conditions mat
 | Item | Note |
 |---|---|
 | Sensor data access | Urban Unit data may need a request or scraping. **Biggest risk — confirm first.** Fallback: OpenAQ / PurpleAir if Karachi sensors are listed there. |
-| Sensor operator | Verify that The Urban Unit actually operates these 9 Karachi sensors (vs a partner network) before naming it in any report. |
+| Sensor operator | ✅ Confirmed: AirGradient sensors listed under contributor "The Urban Unit" (part of its 160-monitor national network, funded by EPIC's Air Quality Fund). |
 | Course reuse | One project for PAI + AIES CCP + AIES Lab — **approved** (21 Oct 2026). Still cite the shared project in each report and write each report fresh. |
 | Low-cost sensor accuracy | Readings are noisy and humidity-biased; document the correction. |
 | Short history | If the history is short, prefer simpler models; one large dataset is fine for the Lab (L1). |
@@ -482,7 +488,7 @@ Karachi Air Quality Forecaster/
 
 Detailed phase-by-phase tasks and progress tracking: [`ROADMAP.md`](ROADMAP.md).
 
-0. ~~Get instructor approval~~ (approved 21 Oct 2026); confirm the sensor operator.
+0. ~~Get instructor approval~~ (approved 21 Oct 2026); ~~confirm the sensor operator~~ (done).
 1. Confirm data access for D1–D3; download and describe them.
 2. Clean data, build 24-h mean targets and features, time-based split.
 3. Persistence + linear baseline → first results; band counts per class.
@@ -503,8 +509,8 @@ Deadlines: **TBD** — add each course's due date here.
 
 ## 15. Open questions
 
-- [ ] How do we get the Urban Unit sensor data (API, download, request)? What date range?
-- [ ] Is The Urban Unit really the operator of these sensors?
+- [ ] Sensor history: OpenAQ free API key (Bilal to register) → check which sensors are mirrored and from when. Fallback: ask The Urban Unit for an AirGradient read token / CSV export.
+- [x] Operator confirmed — The Urban Unit (AirGradient sensors).
 - [x] Forecast horizon — **decided:** next-day 24-h mean (hourly = stretch, chart only).
 - [x] One project for all three courses — **decided** (Bilal, 21 Oct 2026).
 - [x] Instructor approval for the shared project — **approved** (21 Oct 2026).

@@ -11,7 +11,7 @@
 | Phase | Name | Status | Started | Finished |
 |---|---|---|---|---|
 | 0 | Setup | 🟨 In progress | 21 Oct 2026 | |
-| 1 | Data | ⬜ Not started | | |
+| 1 | Data | ⛔ Blocked (sensor history key) | 21 Oct 2026 | |
 | 2 | Clean + features | ⬜ Not started | | |
 | 3 | Baselines | ⬜ Not started | | |
 | 4 | NumPy network | ⬜ Not started | | |
@@ -62,8 +62,8 @@ Phase 4, which can start as soon as Phase 2 is done (it is the slowest; run it a
 **Effort:** ~1 week (longer if sensor access is hard) · **Spec:** §5.1, §5.2, §11
 
 - [ ] **Confirm sensor data access first** (Urban Unit API / download / request). If blocked → check OpenAQ / PurpleAir and update the spec
-- [ ] Verify who operates the 9 sensors
-- [ ] Fill sensor coordinates in spec §5.2
+- [x] Verify who operates the sensors — The Urban Unit (AirGradient)
+- [x] Fill sensor coordinates in spec §5.2 (8 online sensors)
 - [ ] `src/data/download_sensors.py` — D1, saved to `data/raw/sensors/`
 - [ ] `src/data/download_weather.py` — D2 (Open-Meteo), per sensor coordinate
 - [ ] `src/data/download_air_quality.py` — D3 (Open-Meteo / CAMS), per sensor coordinate
@@ -78,6 +78,11 @@ Phase 4, which can start as soon as Phase 2 is done (it is the slowest; run it a
 - [ ] You know the usable date range per sensor
 
 **Notes:**
+- 21 Oct 2026 — AirGradient public API gives **live** readings only; `measures/past` needs the
+  owner's token. OpenAQ mirrors public AirGradient sensors and has a public S3 archive, but finding
+  the location IDs needs a free OpenAQ API key → **Bilal to register** at explore.openaq.org and put
+  `OPENAQ_API_KEY=...` in `.env`. Fallback: email The Urban Unit for a token / CSV export.
+- Open-Meteo weather (archive API) and air-quality (CAMS) APIs both work without a key.
 
 ---
 
