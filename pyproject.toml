@@ -1,0 +1,42 @@
+[project]
+name = "karachi-aq-forecaster"
+version = "0.1.0"
+description = "Next-day PM2.5 forecasting and AQI band classification for Karachi, with a from-scratch NumPy neural network, a rule-based expert system and SHAP explanations."
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "numpy>=2.0",
+    "pandas>=2.2",
+    "pyarrow>=16.0",
+    "scikit-learn>=1.5",
+    "torch>=2.4",
+    "shap>=0.46",
+    "streamlit>=1.38",
+    "plotly>=5.22",
+    "matplotlib>=3.9",
+    "requests>=2.32",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-cov>=5.0",
+    "ipykernel>=6.29",
+]
+
+[tool.uv]
+# This is an application, not a library: don't build/install it as a package.
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "--cov=src --cov-report=term-missing"
+
+[tool.coverage.run]
+source = ["src"]
+omit = ["src/**/__init__.py"]
+
+[tool.coverage.report]
+# Target is 80% (spec §13). Enforced from Phase 8; raise fail_under then.
+fail_under = 0
