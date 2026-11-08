@@ -1,7 +1,7 @@
 # Karachi Air-Quality Forecaster — Project Specification
 
 > One project, three submissions: **PAI (CT-264)**, **AIES (CT-361) CCP** and **AIES Lab (CT-361) CCA**.
-> Author: Bilal · Last updated: 8 November 2026
+> Author: Bilal · Last updated: 8 November 2026 (data verified)
 > Original briefs are in [`docs/briefs/`](docs/briefs/).
 
 ---
@@ -9,8 +9,8 @@
 ## 1. What we are making
 
 A tool that forecasts how polluted the air in Karachi will be **tomorrow**. It predicts the
-**24-hour average** level of fine dust particles (**PM2.5**, µg/m³) at the real sensors
-(8 online as of Oct 2026) run by **The Urban Unit**, sorts each forecast into an
+**24-hour average** level of fine dust particles (**PM2.5**, µg/m³) at **14 real sensors**
+run by **The Urban Unit**, sorts each forecast into an
 air-quality band (Good → Hazardous), and gives plain health advice for it.
 
 At its heart is a **neural network written entirely by hand in NumPy** (no deep-learning
@@ -224,10 +224,11 @@ shows the results.
 
 | # | Source | Type | Role | Status |
 |---|---|---|---|---|
-| D1 | **The Urban Unit** low-cost PM2.5 sensors (AirGradient devices), Karachi — operator confirmed 21 Oct 2026 | Time series, per sensor | **Target** (what we predict) + lag features | Live readings public (AirGradient API, no key). **History needs a key** — owner token (Urban Unit) or OpenAQ mirror (free key). See §5.2 |
+| D1 | **The Urban Unit** low-cost PM2.5 sensors (AirGradient devices), Karachi, via the **OpenAQ** mirror (API v3, free key) | Time series, per sensor | **Target** (what we predict) + lag features | ✅ Verified 8 Nov 2026: 14 usable sensors, Jun 2025 → Nov 2026, **4,107 complete sensor-days**. See §5.2 |
 | D2 | **Weather** — Open-Meteo Historical Weather API (`archive-api.open-meteo.com`; temperature, humidity, wind speed & direction, pressure, rain, boundary-layer height) | Time series, gridded | Input features | ✅ Works without key (tested 21 Oct 2026) |
 | D3 | **Modelled pollution** — CAMS via the Open-Meteo Air Quality API (`air-quality-api.open-meteo.com`; PM2.5, PM10, NO₂, dust) | Time series, gridded | Input features | ✅ Works without key (tested 21 Oct 2026) |
-| D4 | **Health-advice knowledge** — US EPA AQI guidance, WHO 2021 air quality guidelines | Documents | Expert-system rule base | — |
+| D4 | **Health-advice knowledge** — US EPA AQI guidance, WHO 2021 air quality guidelines | Documents | Expert-system rule base | ✅ `docs/report/knowledge_sources.md` (22 draft rules) |
+| D5 | **US Consulate Karachi** reference-grade PM2.5 monitor (US State Dept / AirNow), via OpenAQ location 8156 | Time series, single site | Long-history context: seasonality, band frequencies; optional extra training signal | ✅ Verified: May 2019 → Mar 2025, **1,681 complete days**. Ends before D1 starts (no overlap) |
 
 Record for each: URL, licence, date range, time step, number of rows, and the date downloaded.
 
@@ -239,25 +240,41 @@ alone to meet the requirement.
 
 ### 5.2 Sensor locations
 
-Source: AirGradient public API (`/public/api/v1/world/locations/measures/current`), contributor
-"The Urban Unit", checked 21 Oct 2026. These 8 were online; IDs are AirGradient location IDs.
+Source: OpenAQ API v3 (`/v3/locations` within 25 km of Karachi, owner "The Urban Unit",
+provider AirGradient), checked 8 Nov 2026. Sensors with **≥150 complete days** are used.
 
-| ID | Site | AirGradient ID | Lat / Lon |
-|---|---|---|---|
-| S1 | NED University, Main Campus | 162732 | 24.9338, 67.1135 |
-| S2 | Aga Khan University, Main Campus | 162672 | 24.8924, 67.0747 |
-| S3 | Orangi Pilot Project | 162802 | 24.9373, 67.0190 |
-| S4 | Urban Resource Center | 162379 | 24.8680, 67.0818 |
-| S5 | Gulistan-e-Johar | 162753 | 24.9162, 67.1315 |
-| S6 | Climate Action Center | 162364 | 24.8638, 67.0566 |
-| S7 | Malir Cantonment, Askari 5 | 162762 | 24.9396, 67.1810 |
-| S8 | Clifton | 206703 | 24.8103, 67.0321 |
+| ID | Site | OpenAQ location / sensor | Lat, Lon | Data from → to | Complete days* | Mean PM2.5 |
+|---|---|---|---|---|---|---|
+| S1 | Climate Action Center | 4932783 / 13490916 | 24.8638, 67.0566 | 2025-07-02 → 2026-11-08 | 417 | 43.1 |
+| S2 | Zafar Memon DHA | 4814327 / 13387396 | 24.8147, 67.0671 | 2025-06-21 → 2026-10-27 | 415 | 32.7 |
+| S3 | Urban Resource Center | 4791924 / 13368464 | 24.8680, 67.0818 | 2025-06-19 → 2026-11-08 | 413 | 49.8 |
+| S4 | Aga Khan University Main Campus | 4837113 / 13406419 | 24.8924, 67.0747 | 2025-06-23 → 2026-10-29 | 391 | 35.5 |
+| S5 | Gulistan-e-Johar | 4838712 / 13408226 | 24.9162, 67.1315 | 2025-06-23 → 2026-11-08 | 386 | 48.4 |
+| S6 | G3 Engineering Consultants | 4985886 / 13533643 | 24.8070, 67.0332 | 2025-07-07 → 2026-11-06 | 368 | 38.2 |
+| S7 | NED University, Main Campus | 4837117 / 13406434 | 24.9338, 67.1135 | 2025-06-23 → 2026-11-08 | 284 | 52.0 |
+| S8 | Malir Cantonment, Askari 5 | 4840233 / 13409122 | 24.9396, 67.1810 | 2025-06-23 → 2026-11-07 | 266 | 40.8 |
+| S9 | Aman Khan Kaka Khail | 4808325 / 13381251 | 24.9532, 67.0637 | 2025-06-20 → 2026-11-07 | 241 | 49.8 |
+| S10 | DG House DHA Phase 5 | 4815820 / 13388480 | 24.7956, 67.0481 | 2025-06-21 → 2026-04-14 | 228 | 54.6 |
+| S11 | Orangi Pilot Project | 4847173 / 13414781 | 24.9373, 67.0190 | 2025-06-24 → 2026-11-08 | 197 | 58.6 |
+| S12 | Karachi Zoo | 4804767 / 13378900 | 24.8761, 67.0231 | 2025-06-20 → 2026-07-03 | 173 | 59.6 |
+| S13 | Urban Unit Karachi office | 4838122 / 13407059 | 24.8641, 67.0709 | 2025-06-23 → 2026-11-08 | 165 | 55.9 |
+| S14 | Aga Khan University IED | 4793983 / 13370571 | 24.8921, 67.0709 | 2025-06-19 → 2026-11-08 | 163 | 46.3 |
 
-**Not online on 21 Oct 2026** (in the original overview): Aga Khan University sensor 2,
-Solid Waste Management, G3 Engineering. Include them if their history turns up in D1; otherwise
-the project uses the 8 above. Final count depends on how much history each sensor has.
+\* Complete day = ≥18 of 24 hours present (the §5.3 completeness rule), from OpenAQ daily summaries.
+
+**Excluded (too little data):** NED City Campus (121 days), Clifton (49), Karachi Metropolitan
+Corporation (24), Solid Waste Management (342 days with data but none ≥18 h complete).
+
+**Band mix across all Urban Unit complete days (4,301):** Good 108 · Moderate 2,203 ·
+USG 783 · Unhealthy 1,099 · Very Unhealthy 108 · Hazardous **0**. So Hazardous will be merged
+into Very Unhealthy (§6.4), and Good is rare and concentrated at the DHA sites.
+
+**To check in Phase 2:** whether OpenAQ's AirGradient values are raw or already
+humidity/EPA-corrected (affects the §5.3 correction step).
 
 Weather and modelled data are pulled per coordinate (Open-Meteo snaps to its nearest grid cell).
+Note: CAMS (D3) returns effectively **one value for the whole city** (identical across sites),
+so it is a city-wide feature; ERA5 weather (D2) resolves to ~4 distinct cells across the sites.
 
 ### 5.3 Pre-processing
 
@@ -538,7 +555,7 @@ stretch items (Phase 9) only if time is left after the reports are drafted.
 
 ## 15. Open questions
 
-- [ ] Sensor history: OpenAQ free API key (Bilal to register) → check which sensors are mirrored and from when. Fallback: ask The Urban Unit for an AirGradient read token / CSV export.
+- [x] Sensor history — available via OpenAQ (key in `.env`): 14 sensors, Jun 2025 → Nov 2026 (§5.2).
 - [x] Operator confirmed — The Urban Unit (AirGradient sensors).
 - [x] Forecast horizon — **decided:** next-day 24-h mean (hourly = stretch, chart only).
 - [x] One project for all three courses — **decided** (Bilal, 21 Oct 2026).

@@ -11,7 +11,7 @@
 | Phase | Name | Status | Started | Finished |
 |---|---|---|---|---|
 | 0 | Setup | ✅ Done | 21 Oct 2026 | 21 Oct 2026 |
-| 1 | Data | ⛔ Blocked (sensor history key) | 21 Oct 2026 | |
+| 1 | Data | 🟨 In progress | 21 Oct 2026 | |
 | 2 | Clean + features | ⬜ Not started | | |
 | 3 | Baselines | ⬜ Not started | | |
 | 4 | NumPy network | ⬜ Not started | | |
@@ -61,14 +61,16 @@ Phase 4, which can start as soon as Phase 2 is done (it is the slowest; run it a
 **Goal:** all raw data downloaded, described and reproducible.
 **Effort:** ~1 week (longer if sensor access is hard) · **Spec:** §5.1, §5.2, §11
 
-- [ ] **Confirm sensor data access first** (Urban Unit API / download / request). If blocked → check OpenAQ / PurpleAir and update the spec
+- [x] **Confirm sensor data access** — OpenAQ mirror, free key; 14 usable sensors (spec §5.2)
+- [ ] Update `src/data/sensors.py` to the 14 OpenAQ sensors (IDs changed from the first 8)
+- [ ] `src/data/download_sensors.py` — D1 hourly PM2.5 from OpenAQ
+- [ ] D5: US Consulate history (OpenAQ 8156) — optional, for seasonality context
 - [x] Verify who operates the sensors — The Urban Unit (AirGradient)
 - [x] Fill sensor coordinates in spec §5.2 (8 online sensors)
-- [ ] `src/data/download_sensors.py` — D1, saved to `data/raw/sensors/`
-- [ ] `src/data/download_weather.py` — D2 (Open-Meteo), per sensor coordinate
-- [ ] `src/data/download_air_quality.py` — D3 (Open-Meteo / CAMS), per sensor coordinate
-- [ ] D4: write the EPA + WHO guidance points the rules will use into `docs/report/knowledge_sources.md`
-- [ ] Downloaders retry on failure and never overwrite raw files silently
+- [x] `src/data/download_weather.py` — D2 (Open-Meteo), per sensor coordinate
+- [x] `src/data/download_air_quality.py` — D3 (Open-Meteo / CAMS); data starts 2022-08-05
+- [x] D4: EPA + WHO guidance + 22 draft rules in `docs/report/knowledge_sources.md`
+- [x] Downloaders retry on failure and never overwrite raw files silently (D2, D3)
 - [ ] Source table filled: URL, licence, date range, time step, rows, download date
 - [ ] Quick exploration notebook: coverage per sensor, gaps, obvious faults
 
@@ -83,6 +85,9 @@ Phase 4, which can start as soon as Phase 2 is done (it is the slowest; run it a
   the location IDs needs a free OpenAQ API key → **Bilal to register** at explore.openaq.org and put
   `OPENAQ_API_KEY=...` in `.env`. Fallback: email The Urban Unit for a token / CSV export.
 - Open-Meteo weather (archive API) and air-quality (CAMS) APIs both work without a key.
+- 8 Nov 2026 — **Unblocked.** OpenAQ key works. 18 Urban Unit sensors mirrored from Jun 2025;
+  14 have ≥150 complete days (4,107 sensor-days total). US Consulate reference monitor has
+  1,681 complete days (2019–2025). No Hazardous days in the Urban Unit data.
 
 ---
 
