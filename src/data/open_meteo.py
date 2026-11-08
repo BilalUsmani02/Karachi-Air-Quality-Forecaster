@@ -17,7 +17,7 @@ from src.data.sensors import Sensor
 
 MAX_RETRIES = 5
 BACKOFF_SECONDS = 1.0
-RETRYABLE_STATUS = {429, 500, 502, 503, 504}
+RETRYABLE_STATUS = {408, 429, 500, 502, 503, 504}
 
 
 @dataclass(frozen=True)

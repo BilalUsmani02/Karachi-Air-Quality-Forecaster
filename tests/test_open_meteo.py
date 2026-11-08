@@ -100,6 +100,17 @@ def test_fetch_with_retry_retries_then_succeeds_on_429():
     sleep.assert_called_once_with(om.BACKOFF_SECONDS)
 
 
+def test_fetch_with_retry_retries_on_408_request_timeout():
+    session = MagicMock()
+    session.get.side_effect = [_response(408), _response(200, {"ok": True})]
+    sleep = MagicMock()
+
+    result = om.fetch_with_retry("http://x", {}, session=session, sleep=sleep)
+
+    assert result == {"ok": True}
+    sleep.assert_called_once_with(om.BACKOFF_SECONDS)
+
+
 def test_fetch_with_retry_retries_then_succeeds_after_network_error():
     session = MagicMock()
     session.get.side_effect = [requests.ConnectionError("boom"), _response(200, {"ok": True})]
