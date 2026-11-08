@@ -232,6 +232,19 @@ shows the results.
 
 Record for each: URL, licence, date range, time step, number of rows, and the date downloaded.
 
+**Download record (8 Nov 2026).** Every file is hourly, timezone Asia/Karachi, and listed with
+its endpoint, IDs/coordinates and row count in `data/raw/<source>/manifest.json`.
+
+| # | Endpoint | Licence | Range requested | Files | Rows |
+|---|---|---|---|---|---|
+| D1 | `api.openaq.org/v3/sensors/{id}/hours` | CC BY 4.0 (OpenAQ; original: AirGradient / The Urban Unit) | 2025-06-01 → 2026-11-08 | 14 | 102,110 |
+| D2 | `archive-api.open-meteo.com/v1/archive` | CC BY 4.0 (Open-Meteo) | 2025-05-01 → 2026-11-07 | 14 | 186,816 |
+| D3 | `air-quality-api.open-meteo.com/v1/air-quality` | CC BY 4.0 (Open-Meteo / Copernicus CAMS) | 2025-05-01 → 2026-11-07 | 14 | 186,816 |
+| D4 | EPA AQI TAD, AirNow PM guide, WHO 2021 AQG, Pak-EPA NEQS | Public documents | — | `docs/report/knowledge_sources.md` | 22 rules |
+| D5 | `api.openaq.org/v3/sensors/23747/hours` | CC BY 4.0 (OpenAQ; original: US Dept of State via AirNow) | 2019-01-01 → 2025-04-01 | 1 | 46,937 |
+
+Weather and CAMS start a month before the sensors so 24-hour lag features exist from day one.
+
 **How we meet "≥2 datasets / knowledge sources" (A4, L1):** D1 (measured sensor data) and D4
 (health-guidance knowledge) are fully independent sources. D2 and D3 both come from
 Open-Meteo, so in the report present them as **two datasets from one provider** (different

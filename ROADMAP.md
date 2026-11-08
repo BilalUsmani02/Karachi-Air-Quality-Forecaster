@@ -62,21 +62,21 @@ Phase 4, which can start as soon as Phase 2 is done (it is the slowest; run it a
 **Effort:** ~1 week (longer if sensor access is hard) · **Spec:** §5.1, §5.2, §11
 
 - [x] **Confirm sensor data access** — OpenAQ mirror, free key; 14 usable sensors (spec §5.2)
-- [ ] Update `src/data/sensors.py` to the 14 OpenAQ sensors (IDs changed from the first 8)
-- [ ] `src/data/download_sensors.py` — D1 hourly PM2.5 from OpenAQ
-- [ ] D5: US Consulate history (OpenAQ 8156) — optional, for seasonality context
+- [x] Update `src/data/sensors.py` to the 14 OpenAQ sensors
+- [x] `src/data/download_sensors.py` — D1 hourly PM2.5 from OpenAQ (monthly requests)
+- [x] D5: US Consulate history (OpenAQ 8156) — 46,937 hourly rows, 2019–2025
 - [x] Verify who operates the sensors — The Urban Unit (AirGradient)
 - [x] Fill sensor coordinates in spec §5.2 (8 online sensors)
 - [x] `src/data/download_weather.py` — D2 (Open-Meteo), per sensor coordinate
 - [x] `src/data/download_air_quality.py` — D3 (Open-Meteo / CAMS); data starts 2022-08-05
 - [x] D4: EPA + WHO guidance + 22 draft rules in `docs/report/knowledge_sources.md`
 - [x] Downloaders retry on failure and never overwrite raw files silently (D2, D3)
-- [ ] Source table filled: URL, licence, date range, time step, rows, download date
+- [x] Source table filled (spec §5.1 download record)
 - [ ] Quick exploration notebook: coverage per sensor, gaps, obvious faults
 
 **Done when:**
-- [ ] Re-running the downloaders reproduces `data/raw/`
-- [ ] Every source is described in the spec table
+- [x] Re-running the downloaders reproduces `data/raw/` (commands in README)
+- [x] Every source is described in the spec table
 - [ ] You know the usable date range per sensor
 
 **Notes:**

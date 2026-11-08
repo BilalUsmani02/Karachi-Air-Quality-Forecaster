@@ -47,7 +47,21 @@ uv run pytest                      # tests + coverage report
 uv run streamlit run app/main.py   # web app (from Phase 7)
 ```
 
-Data download and training commands are added here as each phase lands.
+### Download the data (Phase 1)
+
+Sensor data needs a free OpenAQ API key: register at https://explore.openaq.org, then put
+`OPENAQ_API_KEY=<your key>` in a `.env` file in the project root (gitignored).
+
+```bash
+uv run python -m src.data.download_sensors                 # D1: 14 Urban Unit sensors (OpenAQ)
+uv run python -m src.data.download_sensors --consulate     # D5: US Consulate reference monitor
+uv run python -m src.data.download_weather --start 2025-05-01       # D2: ERA5 weather
+uv run python -m src.data.download_air_quality --start 2025-05-01   # D3: CAMS modelled pollution
+```
+
+Existing files are skipped; add `--force` to re-download. Each folder gets a `manifest.json`.
+
+Training commands are added here as each phase lands.
 
 ## Project layout
 
