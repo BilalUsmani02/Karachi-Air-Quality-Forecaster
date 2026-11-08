@@ -15,7 +15,7 @@
 | 2 | Clean + features | ✅ Done | 8 Nov 2026 | 8 Nov 2026 |
 | 3 | Baselines | ✅ Done | 8 Nov 2026 | 8 Nov 2026 |
 | 4 | NumPy network | ✅ Done (untuned) | 8 Nov 2026 | 8 Nov 2026 |
-| 5 | Improve + classify | ⬜ Not started | | |
+| 5 | Improve + classify | 🟨 In progress | 8 Nov 2026 | |
 | 6 | Rules + explanations | ⬜ Not started | | |
 | 7 | App | ⬜ Not started | | |
 | 8 | Reports + viva | ⬜ Not started | | |
