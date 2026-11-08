@@ -1,7 +1,7 @@
 # Karachi Air-Quality Forecaster — Project Specification
 
 > One project, three submissions: **PAI (CT-264)**, **AIES (CT-361) CCP** and **AIES Lab (CT-361) CCA**.
-> Author: Bilal · Last updated: 21 October 2026
+> Author: Bilal · Last updated: 8 November 2026
 > Original briefs are in [`docs/briefs/`](docs/briefs/).
 
 ---
@@ -63,7 +63,7 @@ overview is the agreed reference for PAI (confirmed 21 Oct 2026).
 | P2 | Same task solved with standard tools (PyTorch, scikit-learn) for a fair comparison |
 | P3 | Per-forecast explanations with SHAP |
 | P4 | Streamlit web app: pick a location, see forecast + reasons |
-| P5 | Scope: Karachi only, PM2.5 only, no official health alerts |
+| P5 | Scope: Karachi only, PM2.5 only. Health alerts = general EPA/WHO guidance, informational only — not official warnings or medical advice (§7) |
 
 ### 2.2 AIES (CT-361) — Complex Computing Problem (CCP)
 
@@ -195,9 +195,26 @@ plan outdoor activity a day ahead.
 
 ### 4.4 PAI wording
 
+**As submitted (PAI, Oct 2026):** AI system that forecasts Karachi's air pollution level for the
+next 24 hours using historical air-quality and weather data. A neural network will be built from
+scratch in NumPy, applying linear algebra and calculus to show how the model learns. It will be
+validated against PyTorch and compared with standard machine learning models. Explainable AI
+will highlight the main factors behind each prediction, and a Streamlit dashboard will display
+forecasts and health alerts.
+
 **Objective:** Build a neural network from scratch in NumPy that forecasts next-day 24-h mean
 PM2.5, verify it against an identical PyTorch network, and compare it with scikit-learn
 models. Bands, rules and SHAP make the output usable in a Streamlit app.
+
+---
+
+### 4.5 Short AIES description (for forms)
+
+An AI system that classifies Karachi's air quality for the next 24 hours into standard bands
+(Good to Hazardous), using historical sensor and weather data. A baseline model is improved
+with Random Forest (scikit-learn) and a neural network built in NumPy and checked against
+PyTorch, plus tuning and ensembling. SHAP explains each prediction, and a Streamlit dashboard
+shows the results.
 
 ---
 
@@ -356,7 +373,18 @@ A small rule base, run by forward chaining (rules fire when their conditions mat
 - **Conflict resolution:** most-specific rule wins; ties broken by severity (safest advice wins).
 - **Explanation facility:** show which rules fired and why ("You see this because…").
 - **Sources:** EPA AQI guidance, WHO guidance (D4). Cite each rule's source.
-- Advice is informational, **not an official health warning** (out of scope P5).
+- **Decided 8 Nov 2026: keep health recommendations**, framed as *general public-health
+  guidance from EPA/WHO* — never personal medical advice. Safeguards:
+  - **Quote, don't invent:** advice text comes from D4 (EPA/WHO); every rule carries its source.
+  - **Broad groups only:** profile asks "sensitive group: yes/no" and "outdoor plans: yes/no" —
+    never a named medical condition.
+  - **Err on the safe side:** if the forecast is within a margin (e.g. ±5 µg/m³, tuned on
+    validation error) of a band boundary, advice uses the **worse** band, and the app says so.
+  - **Avoid alert fatigue:** highlight changes ("worse than today") via the trend rule rather
+    than repeating the same warning daily.
+  - **Disclaimer** on every advice panel: informational, not official or medical guidance.
+  - Profile stays in the session only (§10).
+- Size: ~15–25 rules. Effort ~2–3 days (Phase 6).
 
 ---
 
