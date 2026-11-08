@@ -11,7 +11,7 @@
 | Phase | Name | Status | Started | Finished |
 |---|---|---|---|---|
 | 0 | Setup | ✅ Done | 21 Oct 2026 | 21 Oct 2026 |
-| 1 | Data | 🟨 In progress | 21 Oct 2026 | |
+| 1 | Data | ✅ Done | 21 Oct 2026 | 8 Nov 2026 |
 | 2 | Clean + features | ⬜ Not started | | |
 | 3 | Baselines | ⬜ Not started | | |
 | 4 | NumPy network | ⬜ Not started | | |
@@ -72,12 +72,12 @@ Phase 4, which can start as soon as Phase 2 is done (it is the slowest; run it a
 - [x] D4: EPA + WHO guidance + 22 draft rules in `docs/report/knowledge_sources.md`
 - [x] Downloaders retry on failure and never overwrite raw files silently (D2, D3)
 - [x] Source table filled (spec §5.1 download record)
-- [ ] Quick exploration notebook: coverage per sensor, gaps, obvious faults
+- [x] Exploration notebook `notebooks/01_explore_data.ipynb`; findings in `docs/report/data_exploration.md`
 
 **Done when:**
 - [x] Re-running the downloaders reproduces `data/raw/` (commands in README)
 - [x] Every source is described in the spec table
-- [ ] You know the usable date range per sensor
+- [x] You know the usable date range per sensor
 
 **Notes:**
 - 21 Oct 2026 — AirGradient public API gives **live** readings only; `measures/past` needs the
@@ -88,6 +88,10 @@ Phase 4, which can start as soon as Phase 2 is done (it is the slowest; run it a
 - 8 Nov 2026 — **Unblocked.** OpenAQ key works. 18 Urban Unit sensors mirrored from Jun 2025;
   14 have ≥150 complete days (4,107 sensor-days total). US Consulate reference monitor has
   1,681 complete days (2019–2025). No Hazardous days in the Urban Unit data.
+- 8 Nov 2026 — **Phase 1 closed.** Exploration: 4,113 complete sensor-days; sensors agree closely
+  (daily r = 0.91–0.99); only 79 spike-hours and 5 zeros, no negatives or flat-lines; CAMS is one
+  city-wide value, r = 0.73 with sensors but ~14.5 µg/m³ low; PM2.5 falls with temperature, wind,
+  humidity and boundary-layer height (r ≈ −0.5 to −0.65). Weak sensors: S11, S13, S14 (<45% hours).
 
 ---
 
@@ -95,6 +99,11 @@ Phase 4, which can start as soon as Phase 2 is done (it is the slowest; run it a
 
 **Goal:** one tidy feature table with honest targets and no leakage.
 **Effort:** ~1 week · **Spec:** §5.3, §5.4
+
+**Open decision — split:** the notebook proposes train Jun 2025–May 2026, validation Jun–Aug 2026
+(monsoon), test Sep–Nov 2026. Risk: monsoon validation has few Unhealthy days, so tuning is done
+on the cleanest season, and the worst winter months appear only once (in training). Compare with
+time-ordered cross-validation (*rolling-origin*: several train → next-block folds) before fixing.
 
 - [ ] Align all sources to hourly, PKT (UTC+5)
 - [ ] Fault flags: negatives, flat-lines, spikes — rule written down
