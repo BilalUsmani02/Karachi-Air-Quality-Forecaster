@@ -1,0 +1,58 @@
+{
+  "model": "persistence",
+  "route": "regression",
+  "overall_mae": 8.699325768808096,
+  "worst_sensor": {
+    "sensor_id": "S10",
+    "site": "DG House DHA Phase 5",
+    "mae": 23.352127559940055
+  },
+  "best_sensor": {
+    "sensor_id": "S4",
+    "site": "Aga Khan University Main Campus",
+    "mae": 6.154671592775042
+  },
+  "max_ratio": 2.684360625241829,
+  "min_ratio": 0.7074883452281958,
+  "flag_threshold": 0.25,
+  "flagged_sensors": [
+    {
+      "sensor_id": "S10",
+      "site": "DG House DHA Phase 5",
+      "mae": 23.352127559940055
+    },
+    {
+      "sensor_id": "S11",
+      "site": "Orangi Pilot Project",
+      "mae": 20.629138471177946
+    },
+    {
+      "sensor_id": "S12",
+      "site": "Karachi Zoo",
+      "mae": 18.705769841269845
+    },
+    {
+      "sensor_id": "S13",
+      "site": "Urban Unit Karachi office",
+      "mae": 17.878415750915746
+    },
+    {
+      "sensor_id": "S7",
+      "site": "NED University, Main Campus",
+      "mae": 13.290767004460186
+    },
+    {
+      "sensor_id": "S9",
+      "site": "Aman Khan Kaka Khail",
+      "mae": 12.735817586259891
+    }
+  ],
+  "classification": {
+    "pooled_accuracy": 0.7887517146776406,
+    "worst_miss_rate_sensor": {
+      "sensor_id": "S7",
+      "site": "NED University, Main Campus",
+      "miss_rate": 0.2692307692307692
+    }
+  }
+}
