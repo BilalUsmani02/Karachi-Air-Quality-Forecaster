@@ -100,7 +100,23 @@ def test_fetch_hours_stops_on_short_page(monkeypatch):
     assert sleeps == [0, 0]
 
 
-def test_fetch_hours_chunks_by_year(monkeypatch):
+def test_month_chunks_split_on_month_boundaries():
+    assert oa.month_chunks(date(2024, 1, 30), date(2024, 3, 2)) == [
+        (date(2024, 1, 30), date(2024, 1, 31)),
+        (date(2024, 2, 1), date(2024, 2, 29)),
+        (date(2024, 3, 1), date(2024, 3, 2)),
+    ]
+
+
+def test_month_chunks_single_day_and_bad_range():
+    assert oa.month_chunks(date(2025, 12, 31), date(2025, 12, 31)) == [
+        (date(2025, 12, 31), date(2025, 12, 31))
+    ]
+    with pytest.raises(ValueError):
+        oa.month_chunks(date(2025, 2, 1), date(2025, 1, 1))
+
+
+def test_fetch_hours_chunks_by_month(monkeypatch):
     calls = []
 
     def fake_fetch_with_retry(url, params, *, headers=None, session=None, sleep=None):

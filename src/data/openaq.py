@@ -19,7 +19,7 @@ import pandas as pd
 import requests
 
 from src.config import ROOT, TIMEZONE
-from src.data.open_meteo import date_chunks, fetch_with_retry
+from src.data.open_meteo import fetch_with_retry
 
 BASE_URL = "https://api.openaq.org/v3"
 
@@ -69,6 +69,24 @@ def get_api_key(root: Path = ROOT) -> str:
     )
 
 
+def month_chunks(start: date, end: date) -> list[tuple[date, date]]:
+    """Split [start, end] into calendar-month pieces, each inclusive.
+
+    A month is at most 744 hourly rows, so each request fits on one page. Year-long queries
+    timed out (HTTP 408) on deep pages for the US Consulate sensor.
+    """
+    if start > end:
+        raise ValueError(f"start {start} is after end {end}")
+    chunks = []
+    chunk_start = start
+    while chunk_start <= end:
+        next_month = (chunk_start.replace(day=1) + timedelta(days=32)).replace(day=1)
+        chunk_end = min(next_month - timedelta(days=1), end)
+        chunks.append((chunk_start, chunk_end))
+        chunk_start = chunk_end + timedelta(days=1)
+    return chunks
+
+
 def fetch_hours(
     sensor_id: int,
     start: date,
@@ -81,13 +99,13 @@ def fetch_hours(
 ) -> list[dict]:
     """Fetch every hourly aggregate for [start, end] (inclusive calendar days).
 
-    Splits the range into calendar-year chunks and paginates each chunk with `page` until a
+    Splits the range into calendar-month chunks and paginates each chunk with `page` until a
     short page (fewer than `PAGE_LIMIT` results) signals the end.
     """
     url = f"{BASE_URL}/sensors/{sensor_id}/hours"
     headers = {"X-API-Key": api_key}
     records: list[dict] = []
-    for chunk_start, chunk_end in date_chunks(start, end):
+    for chunk_start, chunk_end in month_chunks(start, end):
         datetime_to = (chunk_end + timedelta(days=1)).isoformat()
         page = 1
         while True:
