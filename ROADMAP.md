@@ -12,7 +12,7 @@
 |---|---|---|---|---|
 | 0 | Setup | ✅ Done | 21 Oct 2026 | 21 Oct 2026 |
 | 1 | Data | ✅ Done | 21 Oct 2026 | 8 Nov 2026 |
-| 2 | Clean + features | ⬜ Not started | | |
+| 2 | Clean + features | 🟨 In progress | 8 Nov 2026 | |
 | 3 | Baselines | ⬜ Not started | | |
 | 4 | NumPy network | ⬜ Not started | | |
 | 5 | Improve + classify | ⬜ Not started | | |
