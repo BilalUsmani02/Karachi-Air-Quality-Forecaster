@@ -65,6 +65,7 @@ def fetch_with_retry(
     url: str,
     params: dict,
     *,
+    headers: dict | None = None,
     max_retries: int = MAX_RETRIES,
     backoff_seconds: float = BACKOFF_SECONDS,
     sleep: Callable[[float], None] = time.sleep,
@@ -75,7 +76,7 @@ def fetch_with_retry(
     last_exc: Exception | None = None
     for attempt in range(max_retries):
         try:
-            response = http.get(url, params=params, timeout=30)
+            response = http.get(url, params=params, headers=headers, timeout=30)
         except requests.RequestException as exc:
             last_exc = exc
         else:
