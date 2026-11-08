@@ -13,8 +13,8 @@
 | 0 | Setup | ✅ Done | 21 Oct 2026 | 21 Oct 2026 |
 | 1 | Data | ✅ Done | 21 Oct 2026 | 8 Nov 2026 |
 | 2 | Clean + features | ✅ Done | 8 Nov 2026 | 8 Nov 2026 |
-| 3 | Baselines | 🟨 In progress | 8 Nov 2026 | |
-| 4 | NumPy network | 🟨 In progress | 8 Nov 2026 | |
+| 3 | Baselines | ✅ Done | 8 Nov 2026 | 8 Nov 2026 |
+| 4 | NumPy network | ✅ Done (untuned) | 8 Nov 2026 | 8 Nov 2026 |
 | 5 | Improve + classify | ⬜ Not started | | |
 | 6 | Rules + explanations | ⬜ Not started | | |
 | 7 | App | ⬜ Not started | | |
@@ -112,7 +112,7 @@ monsoon validation block had zero Unhealthy days (spec §5.3).
 - [x] Target: next-day 24-h mean PM2.5 (issue time 00:00 PKT, ≥18/24 valid hours)
 - [x] Band label from the target (EPA 2024 table) — `src/classify/bands.py`
 - [x] Time-based split — rolling-origin folds + final test, `src/data/split.py::project_splits`
-- [ ] Scaler fit on train only — moved to Phase 3 (fitted inside each fold)
+- [x] Scaler fit on train only — `Preprocessor`, fitted inside each fold (Phase 3)
 - [x] Tests: no future data in features, target window correct, split order correct (209 tests)
 
 **Done when:**
@@ -136,21 +136,35 @@ monsoon validation block had zero Unhealthy days (spec §5.3).
 **Goal:** first honest numbers to beat.
 **Effort:** 3–4 days · **Spec:** §6.2 steps 0–2, §6.4, §6.5
 
-- [ ] `src/evaluate/metrics.py` — MAE, RMSE, R², skill vs persistence; accuracy, macro-F1, confusion matrix
-- [ ] Persistence model
-- [ ] Ridge regression (**official baseline**)
-- [ ] Random Forest regressor
-- [ ] Logistic regression classifier (band baseline)
-- [ ] Random Forest classifier
-- [ ] Band counts per class on the training split → decide merges (<~30 samples)
-- [ ] Results saved to `results/` as tables (per sensor + overall)
+- [x] `src/evaluate/metrics.py` — MAE, RMSE, R², skill vs persistence; accuracy, macro-F1, confusion matrix
+- [x] Persistence model
+- [x] Ridge regression (**official baseline**)
+- [x] Random Forest regressor
+- [x] Logistic regression classifier (band baseline)
+- [x] Random Forest classifier
+- [x] Band counts per class on the training split → Hazardous merged, Good kept (spec §6.4)
+- [x] Results saved to `results/` as tables (per sensor + overall)
 
 **Done when:**
-- [ ] One comparison table with all baselines on the validation set
-- [ ] Band merge decision written in spec §6.4
-- [ ] Metrics module has tests
+- [x] One comparison table with all baselines on the validation set
+- [x] Band merge decision written in spec §6.4
+- [x] Metrics module has tests
 
 **Notes:**
+- 8 Nov 2026 — pooled over the 8 CV folds (2,224 sensor-days, Jan–Aug 2026), `results/baselines_summary.md`:
+
+  | Model | MAE µg/m³ | RMSE | R² | Skill vs persistence |
+  |---|---|---|---|---|
+  | Persistence | 8.70 | 14.70 | 0.749 | 0 |
+  | Ridge (official baseline) | 7.68 | 11.10 | 0.857 | +12% |
+  | Random Forest | **6.79** | 10.61 | 0.869 | **+22%** |
+  | NumPy MLP (untuned) | 11.21 | 15.42 | 0.723 | −29% |
+
+  Bands (macro-F1): persistence 0.678 · Ridge→band 0.657 · RF→band 0.598 · RF direct 0.578 ·
+  logistic 0.509 · MLP→band 0.504. Lower MAE did **not** mean better bands: RF/Ridge pull extremes
+  toward the middle, so Very Unhealthy recall is 0–28%. Phase 5 must target macro-F1, not just MAE.
+- Fixed a row-order bug: `cross_validate` now sorts by date so early stopping holds out the
+  latest days, not the last sensors (test added).
 
 ---
 
@@ -159,24 +173,30 @@ monsoon validation block had zero Unhealthy days (spec §5.3).
 **Goal:** a from-scratch MLP that provably matches PyTorch.
 **Effort:** ~1.5 weeks — hardest phase; start right after Phase 2 · **Spec:** §6.3
 
-- [ ] Dense layer: forward + backward
-- [ ] Activations: ReLU + one alternative (tanh or LeakyReLU)
-- [ ] Losses: MSE + Huber
-- [ ] Weight init: He / Xavier, fixed seed
-- [ ] Optimiser: mini-batch SGD, then Adam
-- [ ] L2 regularisation; dropout (optional)
-- [ ] Early stopping on validation loss
-- [ ] **Gradient check** vs numerical gradients (test)
-- [ ] PyTorch twin with the same architecture in `src/models/torch_nn/`
-- [ ] Same data + same initial weights → losses match within tolerance (test)
-- [ ] Compare: final loss, metrics, training time
+- [x] Dense layer: forward + backward
+- [x] Activations: ReLU + one alternative (tanh or LeakyReLU)
+- [x] Losses: MSE + Huber
+- [x] Weight init: He / Xavier, fixed seed
+- [x] Optimiser: mini-batch SGD, then Adam
+- [x] L2 regularisation; dropout (optional)
+- [x] Early stopping on validation loss
+- [x] **Gradient check** vs numerical gradients (test)
+- [x] PyTorch twin with the same architecture in `src/models/torch_nn/`
+- [x] Same data + same initial weights → losses match within tolerance (test)
+- [x] Compare: final loss, metrics, training time
 
 **Done when:**
-- [ ] Gradient check passes for every layer and loss
-- [ ] NumPy vs PyTorch match test passes
-- [ ] NumPy network added to the comparison table
+- [x] Gradient check passes for every layer and loss
+- [x] NumPy vs PyTorch match test passes
+- [x] NumPy network added to the comparison table
 
 **Notes:**
+- 8 Nov 2026 — gradient check relative errors ~1e-10 (threshold 1e-6); NumPy vs PyTorch on real
+  data: max prediction difference 1e-13 µg/m³, max weight difference 6e-16. NumPy trains in ~4 s vs
+  ~38 s for PyTorch on the same data.
+- Untuned network is the weakest model: good in winter (fold 0 MAE 15.9 vs persistence 19.9) but
+  poor in the spring transition (fold 2 MAE 22.3 vs 7.9). Tune in Phase 5 (size, L2, dropout,
+  learning rate, Huber loss).
 
 ---
 

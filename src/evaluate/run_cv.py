@@ -26,7 +26,7 @@ import numpy as np
 import pandas as pd
 
 from src.classify.bands import bands_for, merge_bands
-from src.config import PROCESSED_DIR, RESULTS_DIR
+from src.config import PROCESSED_DIR, RESULTS_DIR, SEED
 from src.data.split import project_splits
 from src.evaluate.metrics import classification_metrics, regression_metrics
 from src.models.baselines.persistence import PersistenceRegressor
@@ -37,6 +37,7 @@ from src.models.baselines.sklearn_models import (
     ridge,
 )
 from src.models.dataset import FEATURE_COLUMNS, Preprocessor, make_xy
+from src.models.numpy_nn.network import MLPRegressorNP
 
 N_CLASS_LABELS = 5  # band indices 0..4, after the Hazardous -> Very Unhealthy merge (contract §3)
 PERSISTENCE_COLUMN = "pm25_prev_day_mean"
@@ -134,6 +135,8 @@ def cross_validate(
     and does not need to be passed in `regressors`.
     Never loads the final-test rows: `project_splits` carves them off first.
     """
+    # Time order matters: the networks' early stopping holds out the *last* training rows.
+    df = df.sort_values(["date", "sensor_id"], kind="stable").reset_index(drop=True)
     folds, _dev, _final_test = project_splits(df)
     persistence_index = FEATURE_COLUMNS.index(PERSISTENCE_COLUMN)
 
@@ -244,8 +247,13 @@ def _classification_tables(predictions: pd.DataFrame) -> tuple[pd.DataFrame, pd.
 # --- CLI ----------------------------------------------------------------------------------
 
 
+def mlp_numpy() -> MLPRegressorNP:
+    """The from-scratch network with its default settings (tuned in Phase 5)."""
+    return MLPRegressorNP(random_state=SEED)
+
+
 def default_regressors() -> dict[str, ModelFactory]:
-    return {"ridge": ridge, "random_forest": random_forest_regressor}
+    return {"ridge": ridge, "random_forest": random_forest_regressor, "mlp_numpy": mlp_numpy}
 
 
 def default_classifiers() -> dict[str, ModelFactory]:

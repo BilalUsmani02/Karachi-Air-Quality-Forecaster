@@ -199,3 +199,41 @@ def test_main_prints_pooled_tables(monkeypatch, capsys, df):
     assert "Pooled regression" in captured.out
     assert "Pooled classification" in captured.out
     assert "persistence" in captured.out
+
+
+class _OrderRecorder:
+    """Regressor that records whether the rows it was trained on arrived in time order."""
+
+    seen_sorted: list[bool] = []
+
+    def fit(self, X: np.ndarray, y: np.ndarray) -> "_OrderRecorder":
+        return self
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        return np.zeros(len(X))
+
+
+def test_cross_validate_feeds_rows_in_time_order(monkeypatch):
+    df = _synthetic_frame(sensor_ids=("S1", "S2"))
+    shuffled = df.sort_values(["sensor_id", "date"]).reset_index(drop=True)
+    seen_dates = []
+    real_make_xy = run_cv.make_xy
+
+    def recording_make_xy(frame, target):
+        if target == "y_pm25":
+            seen_dates.append(frame["date"].to_numpy())
+        return real_make_xy(frame, target)
+
+    monkeypatch.setattr(run_cv, "make_xy", recording_make_xy)
+
+    cross_validate(shuffled, {"order": _OrderRecorder}, {})
+
+    assert seen_dates
+    for dates in seen_dates:
+        assert (np.diff(dates.astype("datetime64[D]").astype(np.int64)) >= 0).all()
+
+
+def test_default_regressors_include_numpy_network():
+    from src.models.numpy_nn.network import MLPRegressorNP
+
+    assert isinstance(run_cv.default_regressors()["mlp_numpy"](), MLPRegressorNP)
