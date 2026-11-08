@@ -259,3 +259,27 @@ def compare_split_designs(
     rolling_rows.insert(0, "design", "rolling_origin")
 
     return pd.concat([holdout_rows, rolling_rows], ignore_index=True)
+
+
+# Project split design, decided 8 Nov 2026 (spec §5.3): the monsoon-only holdout validation
+# block had no Unhealthy days, so model selection uses rolling-origin folds instead.
+FINAL_TEST_START = "2026-09-01"
+CV_FIRST_TEST_START = "2026-01-01"
+CV_TEST_DAYS = 30
+CV_N_FOLDS = 8
+CV_GAP_DAYS = 1
+
+
+def project_splits(df: pd.DataFrame) -> tuple[list[Fold], pd.DataFrame, pd.DataFrame]:
+    """The project's fixed design: (CV folds, development rows, final-test rows).
+
+    Folds tile Jan–Aug 2026 in 30-day blocks over the development rows; the final test
+    period (Sep 2026 onward) is returned separately and must be scored only once.
+    """
+    test_mask = final_test_mask(df, FINAL_TEST_START)
+    dev = df.loc[~test_mask].copy()
+    final_test = df.loc[test_mask].copy()
+    folds = rolling_origin_folds(
+        dev, CV_FIRST_TEST_START, CV_TEST_DAYS, n_folds=CV_N_FOLDS, gap_days=CV_GAP_DAYS
+    )
+    return folds, dev, final_test

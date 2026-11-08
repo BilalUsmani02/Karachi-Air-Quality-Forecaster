@@ -295,12 +295,20 @@ so it is a city-wide feature; ERA5 weather (D2) resolves to ~4 distinct cells ac
 - Missing values: short gaps → interpolation; long gaps → drop the window and record how much was dropped.
 - Outliers / sensor faults: flag impossible values (negative, flat-lined, sudden spikes) and
   document the rule used.
-- Low-cost sensor bias: optionally adjust using humidity (common correction for low-cost PM sensors).
+- Low-cost sensor bias: **no humidity correction** — Phase 1 exploration found no humidity inflation (`docs/report/data_exploration.md`).
+- Exact cleaning rules and table formats: `docs/design/phase2_data_contract.md`.
 - Features: PM2.5 lags (1, 2, 3, 6, 12, 24 h), rolling mean/std, hour of day and weekday
   (sine/cosine), wind as u/v components, modelled PM2.5, sensor ID (one-hot).
 - Scaling: fit the scaler on training data only.
-- **Split by time, never randomly**: train / validation / test in order. Report the date
-  range of each split. No future data may leak into features.
+- **Split by time, never randomly** (decided 8 Nov 2026, `src/data/split.py::project_splits`):
+  - **Final test:** 2026-09-01 → 2026-11-08, scored **once**, after all choices are frozen.
+  - **Model selection:** 8 rolling-origin folds over the rest — expanding training window,
+    each fold tests the next 30 days (Jan → Aug 2026), with a 1-day gap before each test block.
+  - Why not a single holdout: the proposed monsoon validation block (Jun–Aug 2026) contained
+    **zero** Unhealthy or Very Unhealthy days, so it could not tune a band classifier. The folds
+    cover winter smog (Jan: 80% Unhealthy-or-worse), the spring transition, and the monsoon.
+  - Known limit: the final test (Sep–Nov 2026) has no Very Unhealthy days and 1 Good day, so
+    per-class results for those bands come from the CV folds, not the final test.
 - **Target construction:** for each sensor and each forecast issue time (00:00 PKT), the target
   is the mean of the next 24 hourly readings. Require ≥18 of 24 valid hours (EPA-style
   completeness rule), otherwise drop that row and count it.
@@ -377,6 +385,8 @@ predicting the number first beat predicting the category directly?
 **Class imbalance (L2):** Karachi has few "Good" days (cut-off is 9.0 µg/m³) and few
 "Hazardous" days.
 - Count samples per band on the training split first and report the table.
+- **Decided 8 Nov 2026:** Hazardous (0 days) is merged into Very Unhealthy. Good stays its
+  own class (110 rows in total, 74 before the final test — above the 30 threshold).
 - If a band has fewer than ~30 training samples, **merge it with its neighbour** (e.g.
   Good + Moderate, Very Unhealthy + Hazardous) and state the merge in the report.
 - Then handle what remains with class weights (or resampling on the training split only).

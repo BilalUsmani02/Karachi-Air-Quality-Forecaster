@@ -12,7 +12,7 @@
 |---|---|---|---|---|
 | 0 | Setup | ✅ Done | 21 Oct 2026 | 21 Oct 2026 |
 | 1 | Data | ✅ Done | 21 Oct 2026 | 8 Nov 2026 |
-| 2 | Clean + features | 🟨 In progress | 8 Nov 2026 | |
+| 2 | Clean + features | ✅ Done | 8 Nov 2026 | 8 Nov 2026 |
 | 3 | Baselines | ⬜ Not started | | |
 | 4 | NumPy network | ⬜ Not started | | |
 | 5 | Improve + classify | ⬜ Not started | | |
@@ -100,28 +100,34 @@ Phase 4, which can start as soon as Phase 2 is done (it is the slowest; run it a
 **Goal:** one tidy feature table with honest targets and no leakage.
 **Effort:** ~1 week · **Spec:** §5.3, §5.4
 
-**Open decision — split:** the notebook proposes train Jun 2025–May 2026, validation Jun–Aug 2026
-(monsoon), test Sep–Nov 2026. Risk: monsoon validation has few Unhealthy days, so tuning is done
-on the cleanest season, and the worst winter months appear only once (in training). Compare with
-time-ordered cross-validation (*rolling-origin*: several train → next-block folds) before fixing.
+**Decided — split:** 8 rolling-origin folds (30-day test blocks, Jan–Aug 2026) for model
+selection; final test Sep 1 – Nov 8 2026, scored once. The single holdout was rejected because its
+monsoon validation block had zero Unhealthy days (spec §5.3).
 
-- [ ] Align all sources to hourly, PKT (UTC+5)
-- [ ] Fault flags: negatives, flat-lines, spikes — rule written down
-- [ ] Gap handling: short gaps interpolated, long gaps dropped and counted
-- [ ] Optional humidity correction for low-cost sensors
-- [ ] Features: PM2.5 lags (1, 2, 3, 6, 12, 24 h), rolling mean/std, hour + weekday sin/cos, wind u/v, modelled PM2.5, sensor one-hot
-- [ ] Target: next-day 24-h mean PM2.5 (issue time 00:00 PKT, ≥18/24 valid hours)
-- [ ] Band label from the target (EPA 2024 table)
-- [ ] Time-based train / validation / test split; date ranges recorded
-- [ ] Scaler fit on train only
-- [ ] Tests: no future data in features, target window correct, split order correct
+- [x] Align all sources to hourly, PKT (UTC+5) — `src/data/clean.py`
+- [x] Fault flags: negatives, flat-lines, spikes — rules in `docs/design/phase2_data_contract.md` §1
+- [x] Gap handling: gaps ≤3 h interpolated, longer stay missing and are counted
+- [x] Humidity correction — decided **not** to apply (no inflation found in Phase 1)
+- [x] Features: PM2.5 lags, rolling stats, calendar sin/cos, wind u/v, past-day and forecast-day weather + CAMS, sensor one-hot — `src/data/features.py` (64 columns)
+- [x] Target: next-day 24-h mean PM2.5 (issue time 00:00 PKT, ≥18/24 valid hours)
+- [x] Band label from the target (EPA 2024 table) — `src/classify/bands.py`
+- [x] Time-based split — rolling-origin folds + final test, `src/data/split.py::project_splits`
+- [ ] Scaler fit on train only — moved to Phase 3 (fitted inside each fold)
+- [x] Tests: no future data in features, target window correct, split order correct (209 tests)
 
 **Done when:**
-- [ ] `data/processed/features.parquet` (or CSV) builds from raw with one command
-- [ ] Leakage tests pass
-- [ ] Rows dropped at each step are counted and logged
+- [x] `data/processed/features.parquet` builds from raw with one command (`src.data.build_features`)
+- [x] Leakage tests pass (plus 200-row spot check against the hourly table: 0 mismatches)
+- [x] Rows dropped at each step are counted and logged (`data/processed/build_report.json`)
 
 **Notes:**
+- 8 Nov 2026 — **Phase 2 closed.** Cleaning: 102,019 ok hours, 995 interpolated, 20 spikes removed.
+  Feature table: **4,027 sensor-days** (of 7,276 candidates), 2025-06-20 → 2026-11-08, 64 columns.
+  Bands: Good 110 · Moderate 2,056 · USG 734 · Unhealthy 1,029 · Very Unhealthy 98 (Hazardous merged).
+- `pm25_mean_24h` equals `pm25_prev_day_mean` by construction (issue time is midnight) — drop one
+  before fitting linear models.
+- `fc_*` features use recorded weather/CAMS for the target day as a stand-in for forecasts
+  (*perfect-prognosis*); list as a limitation in the report.
 
 ---
 

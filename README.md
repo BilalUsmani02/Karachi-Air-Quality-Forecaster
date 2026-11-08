@@ -61,6 +61,15 @@ uv run python -m src.data.download_air_quality --start 2025-05-01   # D3: CAMS m
 
 Existing files are skipped; add `--force` to re-download. Each folder gets a `manifest.json`.
 
+### Build the feature table (Phase 2)
+
+```bash
+uv run python -m src.data.build_features   # raw → data/processed/{hourly_clean,features}.parquet
+```
+
+`data/processed/build_report.json` records how many hours were cleaned and how many daily rows
+were kept or dropped. Table formats and cleaning rules: `docs/design/phase2_data_contract.md`.
+
 Training commands are added here as each phase lands.
 
 ## Project layout

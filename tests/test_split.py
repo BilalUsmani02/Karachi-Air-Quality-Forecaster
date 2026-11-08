@@ -276,3 +276,19 @@ def test_compare_split_designs_does_not_mutate_input(df):
     before = df.copy(deep=True)
     compare_split_designs(df)
     pd.testing.assert_frame_equal(df, before)
+
+
+def test_project_splits_reserves_final_test_and_builds_eight_folds():
+    from src.data import split
+    dates = pd.date_range("2025-06-20", "2026-11-08", freq="D")
+    df = pd.DataFrame({"date": dates, "y_band": [i % 5 for i in range(len(dates))]})
+
+    folds, dev, final_test = split.project_splits(df)
+
+    assert len(folds) == split.CV_N_FOLDS
+    assert dev["date"].max() < pd.Timestamp(split.FINAL_TEST_START)
+    assert final_test["date"].min() == pd.Timestamp(split.FINAL_TEST_START)
+    assert len(dev) + len(final_test) == len(df)
+    assert folds[0].test_start == pd.Timestamp(split.CV_FIRST_TEST_START)
+    for fold in folds:
+        assert fold.test["date"].max() < pd.Timestamp(split.FINAL_TEST_START)
