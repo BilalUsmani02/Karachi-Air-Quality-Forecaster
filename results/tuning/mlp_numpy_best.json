@@ -1,0 +1,85 @@
+{
+  "params": {
+    "feature_set": "no_calendar",
+    "target": "residual",
+    "hidden_sizes": [
+      32
+    ],
+    "activation": "relu",
+    "loss": "mse",
+    "huber_delta": 1.0,
+    "learning_rate": 0.001,
+    "batch_size": 32,
+    "l2": 0.1,
+    "dropout": 0.0,
+    "early_stopping": true,
+    "validation_fraction": 0.15,
+    "patience": 20,
+    "max_epochs": 200
+  },
+  "pooled": {
+    "mae": 6.626492289588903,
+    "rmse": 10.583192461858129,
+    "r2": 0.8697323685447671,
+    "skill": 0.23827518756125332,
+    "band_accuracy": 0.8072702331961591,
+    "band_macro_f1": 0.6588366394932295
+  },
+  "per_fold_mae": [
+    {
+      "fold": 0,
+      "model": 14.8205,
+      "persistence": 19.9261
+    },
+    {
+      "fold": 1,
+      "model": 11.2134,
+      "persistence": 17.3237
+    },
+    {
+      "fold": 2,
+      "model": 6.352,
+      "persistence": 7.8513
+    },
+    {
+      "fold": 3,
+      "model": 3.769,
+      "persistence": 4.9677
+    },
+    {
+      "fold": 4,
+      "model": 3.6977,
+      "persistence": 4.3074
+    },
+    {
+      "fold": 5,
+      "model": 3.2908,
+      "persistence": 2.8043
+    },
+    {
+      "fold": 6,
+      "model": 2.1418,
+      "persistence": 2.6988
+    },
+    {
+      "fold": 7,
+      "model": 2.3367,
+      "persistence": 2.2461
+    }
+  ],
+  "seed_check_mae": {
+    "seeds": [
+      0,
+      1,
+      2
+    ],
+    "mae": [
+      6.572327781677286,
+      6.625763493051868,
+      6.695728724156479
+    ]
+  },
+  "n_trials": 34,
+  "quick": false,
+  "total_seconds": 440.6
+}

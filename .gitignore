@@ -32,3 +32,6 @@ Thumbs.db
 
 # Claude Code local state
 .claude/
+
+# Tuning run logs
+results/tuning/_*.log

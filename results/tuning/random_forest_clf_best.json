@@ -1,0 +1,81 @@
+{
+  "family": "random_forest_clf",
+  "kind": "classification",
+  "params": {
+    "n_estimators": 100,
+    "max_depth": null,
+    "class_weight": "balanced",
+    "min_samples_leaf": 5,
+    "max_features": 0.5
+  },
+  "metrics": {
+    "accuracy": 0.7832647462277091,
+    "macro_f1": 0.6514345046161805,
+    "per_class": {
+      "0": {
+        "precision": 0.49514563106796117,
+        "recall": 0.7846153846153846,
+        "support": 65
+      },
+      "1": {
+        "precision": 0.9041487839771102,
+        "recall": 0.8293963254593176,
+        "support": 762
+      },
+      "2": {
+        "precision": 0.6067073170731707,
+        "recall": 0.6815068493150684,
+        "support": 292
+      },
+      "3": {
+        "precision": 0.8135048231511254,
+        "recall": 0.8057324840764332,
+        "support": 314
+      },
+      "4": {
+        "precision": 0.4117647058823529,
+        "recall": 0.28,
+        "support": 25
+      }
+    },
+    "confusion_matrix": [
+      [
+        51,
+        14,
+        0,
+        0,
+        0
+      ],
+      [
+        52,
+        632,
+        78,
+        0,
+        0
+      ],
+      [
+        0,
+        53,
+        199,
+        40,
+        0
+      ],
+      [
+        0,
+        0,
+        51,
+        253,
+        10
+      ],
+      [
+        0,
+        0,
+        0,
+        18,
+        7
+      ]
+    ]
+  },
+  "fit_seconds": 9.16,
+  "search_seconds": 131.56
+}

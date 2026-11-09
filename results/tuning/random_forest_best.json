@@ -1,0 +1,84 @@
+{
+  "family": "random_forest",
+  "kind": "regression",
+  "params": {
+    "n_estimators": 500,
+    "max_depth": 15,
+    "min_samples_leaf": 5,
+    "max_features": 0.5
+  },
+  "metrics": {
+    "mae": 6.5400880014945315,
+    "rmse": 10.087044552195445,
+    "r2": 0.881660152136311,
+    "skill": 0.24820748465997544,
+    "band_accuracy": 0.7956104252400549,
+    "band_macro_f1": 0.60867702138334,
+    "band_per_class": {
+      "0": {
+        "precision": 1.0,
+        "recall": 0.47692307692307695,
+        "support": 65
+      },
+      "1": {
+        "precision": 0.8742058449809402,
+        "recall": 0.9028871391076115,
+        "support": 762
+      },
+      "2": {
+        "precision": 0.6276150627615062,
+        "recall": 0.5136986301369864,
+        "support": 292
+      },
+      "3": {
+        "precision": 0.7316455696202532,
+        "recall": 0.9203821656050956,
+        "support": 314
+      },
+      "4": {
+        "precision": 0.3333333333333333,
+        "recall": 0.08,
+        "support": 25
+      }
+    },
+    "band_confusion_matrix": [
+      [
+        31,
+        34,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        688,
+        68,
+        6,
+        0
+      ],
+      [
+        0,
+        65,
+        150,
+        77,
+        0
+      ],
+      [
+        0,
+        0,
+        21,
+        289,
+        4
+      ],
+      [
+        0,
+        0,
+        0,
+        23,
+        2
+      ]
+    ]
+  },
+  "fit_seconds": 30.55,
+  "search_seconds": 116.41
+}

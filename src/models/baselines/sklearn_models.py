@@ -8,7 +8,12 @@ Tuning hyperparameters is Phase 5 — these are reasonable defaults, not tuned.
 
 from __future__ import annotations
 
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.ensemble import (
+    HistGradientBoostingClassifier,
+    HistGradientBoostingRegressor,
+    RandomForestClassifier,
+    RandomForestRegressor,
+)
 from sklearn.linear_model import LogisticRegression, Ridge
 
 from src.config import SEED
@@ -47,3 +52,38 @@ def random_forest_classifier(**overrides) -> RandomForestClassifier:
         **overrides,
     }
     return RandomForestClassifier(**params)
+
+
+def hist_gb_regressor(**overrides) -> HistGradientBoostingRegressor:
+    """Gradient-boosted trees (spec §6.2 step 2 extra family) — fast histogram-based boosting.
+
+    `early_stopping=False` by default: Phase 5 tuning scores every candidate on the fixed
+    `max_iter`/`learning_rate` grid itself (rolling-origin CV already guards against
+    overfitting), rather than letting each candidate silently stop at a different iteration
+    count, which would make the grid harder to compare.
+    """
+    params = {
+        "learning_rate": 0.1,
+        "max_leaf_nodes": 31,
+        "l2_regularization": 0.0,
+        "max_iter": 200,
+        "early_stopping": False,
+        "random_state": SEED,
+        **overrides,
+    }
+    return HistGradientBoostingRegressor(**params)
+
+
+def hist_gb_classifier(**overrides) -> HistGradientBoostingClassifier:
+    """Gradient-boosted trees for the direct band classifier, balanced for class imbalance (§6.4)."""
+    params = {
+        "learning_rate": 0.1,
+        "max_leaf_nodes": 31,
+        "l2_regularization": 0.0,
+        "max_iter": 200,
+        "early_stopping": False,
+        "class_weight": "balanced",
+        "random_state": SEED,
+        **overrides,
+    }
+    return HistGradientBoostingClassifier(**params)

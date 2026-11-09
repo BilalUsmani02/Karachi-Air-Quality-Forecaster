@@ -349,6 +349,10 @@ so it is a city-wide feature; ERA5 weather (D2) resolves to ~4 distinct cells ac
 | 5 | Tuned versions (grid/random search on validation set) | — | Improvement (A13) | Core |
 | 6 | Ensemble (average of best models; stacking = stretch) | — | Improvement (A13) | Core |
 
+**Decided 10 Nov 2026:** production forecaster = equal-weight average of tuned Gradient
+Boosting and the tuned NumPy network (`src/models/final.py`); bands by regress-then-band.
+Evidence: `docs/report/model_selection.md`.
+
 **Core** = the minimum that meets every requirement in all three courses. Build all Core items
 end-to-end (data → app) **before** starting any stretch item.
 

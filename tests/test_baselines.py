@@ -1,10 +1,17 @@
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.ensemble import (
+    HistGradientBoostingClassifier,
+    HistGradientBoostingRegressor,
+    RandomForestClassifier,
+    RandomForestRegressor,
+)
 from sklearn.linear_model import LogisticRegression, Ridge
 
 from src.config import SEED
 from src.models.baselines.persistence import PersistenceRegressor
 from src.models.baselines.sklearn_models import (
+    hist_gb_classifier,
+    hist_gb_regressor,
     logistic_regression,
     random_forest_classifier,
     random_forest_regressor,
@@ -75,6 +82,41 @@ def test_random_forest_classifier_factory_balanced():
 def test_factories_return_fresh_unfit_instances():
     a, b = ridge(), ridge()
     assert a is not b
+
+
+def test_hist_gb_regressor_factory_defaults():
+    model = hist_gb_regressor()
+    assert isinstance(model, HistGradientBoostingRegressor)
+    assert model.random_state == SEED
+    assert model.early_stopping is False
+    assert model.max_leaf_nodes == 31
+
+
+def test_hist_gb_regressor_factory_overrides():
+    model = hist_gb_regressor(learning_rate=0.05, max_iter=500)
+    assert model.learning_rate == 0.05
+    assert model.max_iter == 500
+
+
+def test_hist_gb_classifier_factory_balanced():
+    model = hist_gb_classifier()
+    assert isinstance(model, HistGradientBoostingClassifier)
+    assert model.class_weight == "balanced"
+    assert model.random_state == SEED
+    assert model.early_stopping is False
+
+
+def test_hist_gb_factories_fit_and_predict_on_tiny_data():
+    rng = np.random.default_rng(0)
+    X = rng.normal(size=(60, 4))
+    y_reg = rng.normal(size=60)
+    y_clf = np.array([0] * 50 + [1] * 8 + [2] * 2)
+
+    reg = hist_gb_regressor(max_iter=20).fit(X, y_reg)
+    assert reg.predict(X).shape == (60,)
+
+    clf = hist_gb_classifier(max_iter=20).fit(X, y_clf)
+    assert clf.predict(X).shape == (60,)
 
 
 def test_logistic_regression_fits_without_error_on_tiny_imbalanced_data():

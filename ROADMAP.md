@@ -14,8 +14,8 @@
 | 1 | Data | ✅ Done | 21 Oct 2026 | 8 Nov 2026 |
 | 2 | Clean + features | ✅ Done | 8 Nov 2026 | 8 Nov 2026 |
 | 3 | Baselines | ✅ Done | 8 Nov 2026 | 8 Nov 2026 |
-| 4 | NumPy network | ✅ Done (untuned) | 8 Nov 2026 | 8 Nov 2026 |
-| 5 | Improve + classify | 🟨 In progress | 8 Nov 2026 | |
+| 4 | NumPy network | ✅ Done | 8 Nov 2026 | 8 Nov 2026 |
+| 5 | Improve + classify | ✅ Done | 8 Nov 2026 | 10 Nov 2026 |
 | 6 | Rules + explanations | ⬜ Not started | | |
 | 7 | App | ⬜ Not started | | |
 | 8 | Reports + viva | ⬜ Not started | | |
@@ -205,20 +205,33 @@ monsoon validation block had zero Unhealthy days (spec §5.3).
 **Goal:** beat the baselines and answer "number first, or band directly?"
 **Effort:** ~1 week · **Spec:** §6.2 steps 5–6, §6.4
 
-- [ ] Hyper-parameter search on validation set (RF, Ridge α, NN size / learning rate / L2)
-- [ ] Simple average ensemble of the best models
-- [ ] Route 1: regress then band
-- [ ] Route 2: direct classifier with class weights (and merged bands)
-- [ ] Compare routes: macro-F1, per-class recall, confusion matrices
-- [ ] **Final evaluation on the test period — run once**, after all choices are frozen
-- [ ] Fairness check: error per sensor / neighbourhood (spec §10)
+- [x] Hyper-parameter search on the 8 CV folds (Ridge, RF, Gradient Boosting, NumPy network, classifiers)
+- [x] Simple average ensemble — Gradient Boosting + NumPy network (`src/models/final.py`)
+- [x] Route 1: regress then band
+- [x] Route 2: direct classifier with class weights (and merged bands)
+- [x] Compare routes — regress-then-band chosen (fewest missed Unhealthy days)
+- [x] **Final evaluation on the test period — run once** (10 Nov 2026, `results/final_test/`)
+- [x] Fairness check: error per sensor / neighbourhood (`results/fairness/`)
 
 **Done when:**
-- [ ] Final results table (regression + classification) on the test set
-- [ ] Best model(s) saved to `models/` with version info
-- [ ] Route comparison written up in notes for the AIES report
+- [x] Final results table (regression + classification) on the test set
+- [x] Best model saved: `models/final_ensemble.pkl` (refit on all rows, gitignored; rebuild with `final_test --save-production`)
+- [x] Route comparison written up: `docs/report/model_selection.md`
 
 **Notes:**
+- 10 Nov 2026 — **Phase 5 closed.** Full write-up: `docs/report/model_selection.md`.
+  - CV MAE after tuning: Ridge 7.22 · RF 6.54 · Gradient Boosting 6.30 · NumPy network 6.63
+    (from 11.21: no calendar features, change-from-yesterday target, 32 units, L2 0.1).
+  - Final model: **average of Gradient Boosting + NumPy network** — CV MAE 6.16 (+29% vs persistence).
+  - Band route: regress-then-band — CV accuracy 82.6%, misses 8% of Unhealthy days (persistence 18%).
+  - **Final test (Sep 1 – Nov 8 2026, once):** ensemble MAE 4.63 (+20.5%), band accuracy 84.6%,
+    misses 14.8% of Unhealthy days (persistence 22.7%). No Very Unhealthy days in this period.
+  - Fairness: errors are larger in more polluted areas (Orangi worst, MAE 18.5 in CV); mostly
+    explained by pollution level (ρ = 0.81), not data gaps (ρ = −0.47). `results/fairness/`.
+  - The +5 µg/m³ safety margin is **not** applied to the band (it erases "Good"); it goes into
+    the advice layer in Phase 6.
+- Two tuning sub-agents stalled while waiting on long searches; their code was recovered and the
+  searches rerun as background jobs. Test suite now takes ~9 min (tuning tests fit real models).
 
 ---
 
