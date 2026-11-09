@@ -57,15 +57,20 @@ def load_cams_raw(path: Path) -> pd.DataFrame:
 
 
 def regular_hourly_grid(
-    sensor_raw: pd.DataFrame, weather_raw: pd.DataFrame, cams_raw: pd.DataFrame
+    sensor_raw: pd.DataFrame,
+    weather_raw: pd.DataFrame,
+    cams_raw: pd.DataFrame,
+    end: pd.Timestamp | None = None,
 ) -> pd.DatetimeIndex:
     """Hourly index from the earliest weather/CAMS hour to the sensor's last raw reading.
 
     Contract §1: this keeps the ~month of weather/CAMS data before the sensor's first
-    reading, so lag features exist from the first sensor day.
+    reading, so lag features exist from the first sensor day. `end` overrides the last hour:
+    the live pipeline extends the grid through today (PM2.5 NaN) so today's 00:00 issue row
+    and today's weather exist.
     """
     start = min(weather_raw["time"].min(), cams_raw["time"].min())
-    end = sensor_raw["time"].max()
+    end = sensor_raw["time"].max() if end is None else end
     return pd.date_range(start, end, freq="h")
 
 
@@ -222,8 +227,23 @@ def build_hourly_table(sensor_id: str, raw_dir: Path = RAW_DIR) -> tuple[pd.Data
     sensor_raw = load_sensor_raw(raw_dir / "sensors" / f"{sensor_id}.csv")
     weather_raw = load_weather_raw(raw_dir / "weather" / f"{sensor_id}.csv")
     cams_raw = load_cams_raw(raw_dir / "air_quality" / f"{sensor_id}.csv")
+    return assemble_hourly_table(sensor_id, sensor_raw, weather_raw, cams_raw)
 
-    grid = regular_hourly_grid(sensor_raw, weather_raw, cams_raw)
+
+def assemble_hourly_table(
+    sensor_id: str,
+    sensor_raw: pd.DataFrame,
+    weather_raw: pd.DataFrame,
+    cams_raw: pd.DataFrame,
+    *,
+    end: pd.Timestamp | None = None,
+) -> tuple[pd.DataFrame, dict]:
+    """Clean and join one sensor's three raw frames (already loaded) into the §1 hourly table.
+
+    `cams_raw` must already use the `cams_*` column names. `end` is passed to
+    `regular_hourly_grid` (None = the sensor's last raw reading, as in training).
+    """
+    grid = regular_hourly_grid(sensor_raw, weather_raw, cams_raw, end=end)
 
     pm25_table = _reindex_on_grid(clean_sensor_hourly(sensor_raw), grid)
     pm25_table["pm25_flag"] = pm25_table["pm25_flag"].fillna("missing")
