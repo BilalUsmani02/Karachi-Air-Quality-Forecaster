@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import argparse
+import sys
 
 from src.expert import explain, recommend
 
@@ -17,6 +18,9 @@ def main() -> None:
     parser.add_argument("--sensitive", action="store_true", help="person is in a sensitive group")
     parser.add_argument("--outdoor", action="store_true", help="person has outdoor plans")
     args = parser.parse_args()
+    # Windows consoles default to cp1252, which garbles µ, ³ and dashes.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
 
     rec = recommend(
         forecast_pm25=args.pm25,
