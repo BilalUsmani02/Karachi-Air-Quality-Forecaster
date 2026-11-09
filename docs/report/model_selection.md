@@ -56,9 +56,11 @@ final system. Equal weights on purpose: fitting weights on the same folds would 
 |---|---|---|---|---|
 | Persistence → band | 78.9% | **0.678** | 18.0% | 5.4% |
 | Random Forest classifier (direct) | 78.3% | 0.651 | 15.0% | 3.6% |
+| Gradient Boosting classifier (direct) | 82.0% | 0.664 | 10.0% | 6.3% |
 | **Ensemble → band** | **82.6%** | 0.674 | **8.0%** | 5.6% |
 
-**Chosen:** predict PM2.5 with the ensemble, then look up its band. It is the most accurate and
+**Chosen:** predict PM2.5 with the ensemble, then look up its band. The best direct classifier
+(Gradient Boosting) comes close but is behind on every measure. It is the most accurate and
 misses the fewest Unhealthy-or-worse days, which is the error that matters most for health.
 Its weak spot is the rare extremes: it recognises only 57% of Good days and 16% of the 25
 Very Unhealthy days, because averaging models pulls extreme forecasts toward the middle.
