@@ -246,6 +246,16 @@ def build_daily_features(hourly: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
     Returns `(features, report)`. `report` counts candidate/dropped/kept rows per sensor and
     in total (see `_drop_incomplete_rows`).
     """
+    kept, report = _drop_incomplete_rows(build_daily_frame(hourly))
+    return kept.reset_index(drop=True), report
+
+
+def build_daily_frame(hourly: pd.DataFrame) -> pd.DataFrame:
+    """Every (sensor_id, date) row of the feature table, in `COLUMN_ORDER`, before any row is dropped.
+
+    `build_daily_features` filters this to labelled rows for training; the live pipeline reads
+    the unlabelled row for today (its `y_pm25` is NaN because the day has not happened yet).
+    """
     prepared = _prepare_hourly(hourly)
 
     lag_features = _hourly_lag_features(prepared)
@@ -277,6 +287,4 @@ def build_daily_features(hourly: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
     calendar = _calendar_features(day_frame["date"])
     sensor_onehot = _sensor_one_hot(day_frame["sensor_id"])
     day_frame = pd.concat([day_frame, calendar, sensor_onehot], axis=1)
-
-    kept, report = _drop_incomplete_rows(day_frame)
-    return kept[COLUMN_ORDER].reset_index(drop=True), report
+    return day_frame[COLUMN_ORDER]

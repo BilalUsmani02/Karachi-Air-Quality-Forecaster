@@ -35,3 +35,6 @@ Thumbs.db
 
 # Tuning run logs
 results/tuning/_*.log
+
+# Live forecast cache (src/live)
+data/cache/
