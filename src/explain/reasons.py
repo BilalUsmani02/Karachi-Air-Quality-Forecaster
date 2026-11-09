@@ -8,9 +8,9 @@ one "wind direction" contribution per period (yesterday/tomorrow): on their own,
 component is not a number anyone reads naturally. `top_reasons` turns the top-`k` grouped
 contributions into sentences such as:
 
-    "Low tomorrow's wind speed (1.8 m/s) raised the forecast by about 8 µg/m³."
+    "Tomorrow's wind speed was low (1.8 m/s), which raised the forecast by about 8 µg/m³."
 
-Direction words ("raised"/"lowered") come from the SHAP value's sign; "Low"/"High" compares the
+Direction words ("raised"/"lowered") come from the SHAP value's sign; "low"/"high" compares the
 raw value against the training median passed in via `feature_medians`.
 """
 
@@ -180,16 +180,17 @@ def _sentence(g: GroupedContribution, median: float | None) -> str:
     verb = "raised" if g.shap_value >= 0 else "lowered"
     magnitude = abs(g.shap_value)
 
+    effect = f"{verb} the forecast by about {magnitude:.0f} µg/m³."
     if g.raw_value is None:
-        subject = g.label
+        text = f"{g.label} {effect}"
     else:
-        qualifier = ""
-        if median is not None:
-            qualifier = "Low " if g.raw_value < median else "High "
         unit = f" {g.unit}" if g.unit else ""
-        subject = f"{qualifier}{g.label} ({g.raw_value:.1f}{unit})"
-
-    text = f"{subject} {verb} the forecast by about {magnitude:.0f} µg/m³."
+        value = f"{g.raw_value:.1f}{unit}"
+        if median is None:
+            text = f"{g.label} ({value}) {effect}"
+        else:
+            level = "low" if g.raw_value < median else "high"
+            text = f"{g.label} was {level} ({value}), which {effect}"
     return text[0].upper() + text[1:]
 
 

@@ -16,7 +16,7 @@
 | 3 | Baselines | ✅ Done | 8 Nov 2026 | 8 Nov 2026 |
 | 4 | NumPy network | ✅ Done | 8 Nov 2026 | 8 Nov 2026 |
 | 5 | Improve + classify | ✅ Done | 8 Nov 2026 | 10 Nov 2026 |
-| 6 | Rules + explanations | 🟨 In progress | 10 Nov 2026 | |
+| 6 | Rules + explanations | ✅ Done | 10 Nov 2026 | 10 Nov 2026 |
 | 7 | App | ⬜ Not started | | |
 | 8 | Reports + viva | ⬜ Not started | | |
 | 9 | Stretch (optional) | ⬜ Not started | | |
@@ -240,22 +240,30 @@ monsoon validation block had zero Unhealthy days (spec §5.3).
 **Goal:** every output comes with advice and reasons.
 **Effort:** ~1 week · **Spec:** §7, §8
 
-- [ ] Facts model: band, trend, sensitive group, outdoor activity, time of day
-- [ ] Rule base with a source (EPA / WHO) on every rule
-- [ ] Forward-chaining engine
-- [ ] Conflict resolution: most specific wins, ties → safest advice
-- [ ] Explanation trace: which rules fired and why
-- [ ] SHAP TreeExplainer on the best tree model
-- [ ] SHAP DeepExplainer on the PyTorch twin
-- [ ] Plain-English reason text ("Low wind raised the forecast by ~8 µg/m³")
-- [ ] Global SHAP summary plot for the report
-- [ ] Tests: each rule fires on the right facts; conflicts resolve correctly
+- [x] Facts model: band, trend, sensitive group, outdoor activity (time of day dropped — the forecast is a daily mean)
+- [x] Rule base with a source (EPA / WHO) on every rule — R01–R22, stored as data (`src/expert/rules.py`)
+- [x] Forward-chaining engine (`src/expert/engine.py`) — runs to a fixpoint; the safety margin (R21) is a real chained rule
+- [x] Conflict resolution: most specific wins, ties → safest advice, then the rule that checks sensitive-group status
+- [x] Explanation trace: which rules fired and why (`src/expert/explain.py`)
+- [x] SHAP TreeExplainer on the best tree model (Gradient Boosting member)
+- [x] ~~SHAP DeepExplainer on the PyTorch twin~~ → replaced by a model-agnostic explainer on the whole production ensemble (explains what the app actually serves)
+- [x] Plain-English reason text ("Yesterday's average PM2.5 was high (137.3 µg/m³), which raised the forecast by about 37 µg/m³.")
+- [x] Global SHAP summary plot for the report (`results/explain/shap_summary.png`)
+- [x] Tests: each rule fires on the right facts; conflicts resolve correctly (167 expert + 23 SHAP tests)
 
 **Done when:**
-- [ ] For any test-set row: forecast → band → advice → rules fired → top SHAP reasons
-- [ ] Rule engine has tests
+- [x] For any test-set row: forecast → band → advice → rules fired → top SHAP reasons
+- [x] Rule engine has tests
 
 **Notes:**
+- Safety margin: if the forecast is within 5 µg/m³ below the next band (USG or worse), the
+  advice follows the worse band and says so; the band *shown* never changes.
+- Trend: rising/falling when the change is ≥ max(5 µg/m³, 10% of today).
+- Found a gap in the draft rule table: R15 ties with R14/R16/R17 on both specificity and
+  severity; a third, documented tie-break resolves it (`docs/report/expert_system.md` §5).
+- SHAP: one live explanation takes ~0.7 s; additivity error ~1e-13 µg/m³. Top global factors:
+  yesterday's PM2.5, last hour's PM2.5, CAMS PM2.5 and NO₂ forecasts (`docs/report/explainability.md`).
+- Full suite: 600 tests pass, 98% coverage.
 
 ---
 

@@ -148,3 +148,11 @@ def test_load_bundle_round_trips_a_pickle(tmp_path):
 
     bundle = load_bundle(path)
     assert bundle == {"preprocessor": None, "model": "m", "trained_on": ["a", "b"]}
+
+
+def test_raw_feature_order_matches_preprocessor_output_order():
+    # explain_row names SHAP values by the raw row's index; the Preprocessor emits scaled
+    # columns first, then sensor one-hots. The two orders must agree or every name is wrong.
+    from src.models.dataset import _SCALED_COLUMNS, FEATURE_COLUMNS, SENSOR_COLUMNS
+
+    assert list(FEATURE_COLUMNS) == list(_SCALED_COLUMNS) + list(SENSOR_COLUMNS)

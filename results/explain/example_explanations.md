@@ -10,9 +10,9 @@ Forecast: **157.3 µg/m³** (base value 49.2 µg/m³, additivity error +0.000 µ
 
 Top reasons:
 
-- High yesterday's average PM2.5 (137.3 µg/m³) raised the forecast by about 37 µg/m³.
-- High the PM2.5 level an hour ago (195.0 µg/m³) raised the forecast by about 19 µg/m³.
-- High tomorrow's modelled PM2.5 (CAMS atmospheric model) (59.3 µg/m³) raised the forecast by about 13 µg/m³.
+- Yesterday's average PM2.5 was high (137.3 µg/m³), which raised the forecast by about 37 µg/m³.
+- The PM2.5 level an hour ago was high (195.0 µg/m³), which raised the forecast by about 19 µg/m³.
+- Tomorrow's modelled PM2.5 (CAMS atmospheric model) was high (59.3 µg/m³), which raised the forecast by about 13 µg/m³.
 
 | Feature | Raw value | SHAP (µg/m³) |
 |---|---|---|
@@ -29,9 +29,9 @@ Forecast: **5.0 µg/m³** (base value 49.2 µg/m³, additivity error -0.000 µg/
 
 Top reasons:
 
-- Low yesterday's average PM2.5 (13.8 µg/m³) lowered the forecast by about 17 µg/m³.
-- High yesterday's rainfall (86.0 mm) lowered the forecast by about 7 µg/m³.
-- Low the PM2.5 level an hour ago (4.3 µg/m³) lowered the forecast by about 7 µg/m³.
+- Yesterday's average PM2.5 was low (13.8 µg/m³), which lowered the forecast by about 17 µg/m³.
+- Yesterday's rainfall was high (86.0 mm), which lowered the forecast by about 7 µg/m³.
+- The PM2.5 level an hour ago was low (4.3 µg/m³), which lowered the forecast by about 7 µg/m³.
 
 | Feature | Raw value | SHAP (µg/m³) |
 |---|---|---|
@@ -48,9 +48,9 @@ Forecast: **9.0 µg/m³** (base value 49.2 µg/m³, additivity error -0.000 µg/
 
 Top reasons:
 
-- Low yesterday's average PM2.5 (20.5 µg/m³) lowered the forecast by about 13 µg/m³.
-- Low tomorrow's modelled PM2.5 (CAMS atmospheric model) (8.1 µg/m³) lowered the forecast by about 8 µg/m³.
-- Low the PM2.5 level an hour ago (3.9 µg/m³) lowered the forecast by about 5 µg/m³.
+- Yesterday's average PM2.5 was low (20.5 µg/m³), which lowered the forecast by about 13 µg/m³.
+- Tomorrow's modelled PM2.5 (CAMS atmospheric model) was low (8.1 µg/m³), which lowered the forecast by about 8 µg/m³.
+- The PM2.5 level an hour ago was low (3.9 µg/m³), which lowered the forecast by about 5 µg/m³.
 
 | Feature | Raw value | SHAP (µg/m³) |
 |---|---|---|

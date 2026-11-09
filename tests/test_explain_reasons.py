@@ -49,8 +49,8 @@ def test_low_high_wording_relative_to_median():
     texts = reasons.top_reasons(
         explanation, k=2, feature_medians={"fc_wind_speed_10m": 3.0, "past_temperature_2m": 28.0}
     )
-    assert "Low" in texts[0]  # 1.8 < median 3.0
-    assert "High" in texts[1]  # 40.0 > median 28.0
+    assert "was low" in texts[0]  # 1.8 < median 3.0
+    assert "was high" in texts[1]  # 40.0 > median 28.0
 
 
 def test_units_appear_in_the_sentence():
