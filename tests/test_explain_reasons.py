@@ -53,6 +53,14 @@ def test_low_high_wording_relative_to_median():
     assert "was high" in texts[1]  # 40.0 > median 28.0
 
 
+def test_missing_raw_value_says_missing_not_high_or_low():
+    explanation = _explanation([Contribution("fc_cams_no2", raw_value=float("nan"), shap_value=-3.0)])
+    text = reasons.top_reasons(explanation, k=1, feature_medians={"fc_cams_no2": 20.0})[0]
+    assert "was missing" in text
+    assert "nan" not in text
+    assert "was high" not in text and "was low" not in text
+
+
 def test_units_appear_in_the_sentence():
     explanation = _explanation([Contribution("fc_wind_speed_10m", raw_value=1.8, shap_value=8.0)])
     texts = reasons.top_reasons(explanation, k=1, feature_medians={"fc_wind_speed_10m": 3.0})

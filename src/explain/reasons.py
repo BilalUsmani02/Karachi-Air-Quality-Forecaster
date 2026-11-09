@@ -16,6 +16,8 @@ raw value against the training median passed in via `feature_medians`.
 
 from __future__ import annotations
 
+import math
+
 from dataclasses import dataclass
 from typing import Mapping, Sequence
 
@@ -183,6 +185,9 @@ def _sentence(g: GroupedContribution, median: float | None) -> str:
     effect = f"{verb} the forecast by about {magnitude:.0f} µg/m³."
     if g.raw_value is None:
         text = f"{g.label} {effect}"
+    elif math.isnan(g.raw_value):
+        # The preprocessor filled the gap with the training median, so say so plainly.
+        text = f"{g.label} was missing (a typical value was used), which {effect}"
     else:
         unit = f" {g.unit}" if g.unit else ""
         value = f"{g.raw_value:.1f}{unit}"
