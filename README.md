@@ -47,6 +47,20 @@ uv run pytest                      # tests + coverage report
 uv run streamlit run app/main.py   # web app (from Phase 7)
 ```
 
+### Run the app (Phase 7)
+
+```bash
+uv run streamlit run app/main.py
+```
+
+That one command is enough — it works **offline**: on first load it shows a cached forecast
+if one exists, or falls back to a demo day from the stored historical data, no internet
+connection or API keys needed. Inside the app, use the **🔄 Refresh live data** button on the
+Forecast page to try fetching the latest readings and weather; if that fails (or the live
+pipeline isn't available), it falls back to the cache, then the demo, and says so with a
+warning banner. If `models/final_ensemble.pkl` is missing, the app shows the command to build
+it (`uv run python -m src.evaluate.final_test --save-production`) instead of crashing.
+
 ### Download the data (Phase 1)
 
 Sensor data needs a free OpenAQ API key: register at https://explore.openaq.org, then put
@@ -93,8 +107,10 @@ Training commands are added here as each phase lands.
 │   ├── classify/       AQI band classifier
 │   ├── expert/         rule base, inference, explanations
 │   ├── explain/        SHAP
-│   └── evaluate/       metrics, comparison tables
-├── app/                Streamlit app
+│   ├── evaluate/       metrics, comparison tables
+│   ├── live/           the Snapshot contract (+ the live-fetch pipeline)
+│   └── ui/             pure, Streamlit-free helpers behind app/
+├── app/                Streamlit app (views/, components/, main.py)
 ├── models/             trained models (not in git)
 ├── results/            metrics tables and figures
 ├── notebooks/          exploration only
