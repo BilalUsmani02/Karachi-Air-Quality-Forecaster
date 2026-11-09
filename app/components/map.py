@@ -12,18 +12,17 @@ import plotly.graph_objects as go
 
 from src.ui.results import SensorSummary
 
-SELECTED_SIZE = 20
+SELECTED_SIZE = 24
 UNSELECTED_SIZE = 12
 
 
 def build_map_figure(summaries: list[SensorSummary], selected_sensor_id: str | None) -> go.Figure:
     """A plotly `Scattermap` of every registered sensor, coloured by its forecast band.
 
-    The selected sensor is drawn larger with a dark outline; a sensor with no forecast today
+    The selected sensor is drawn larger (map markers cannot have outlines); a sensor with no forecast today
     is grey (`src.ui.results.NO_FORECAST_COLOR`) so it reads as "nothing to show", not an error.
     """
     sizes = [SELECTED_SIZE if s.sensor_id == selected_sensor_id else UNSELECTED_SIZE for s in summaries]
-    line_widths = [3 if s.sensor_id == selected_sensor_id else 0 for s in summaries]
     texts = [
         f"{s.site}<br>{s.band_name}" + (f": {s.forecast_pm25:.0f} µg/m³" if s.has_forecast else "")
         for s in summaries
@@ -40,7 +39,6 @@ def build_map_figure(summaries: list[SensorSummary], selected_sensor_id: str | N
             customdata=[s.sensor_id for s in summaries],
         )
     )
-    fig.update_traces(marker_line_width=line_widths, marker_line_color="#222222", selector=dict(type="scattermap"))
     fig.update_layout(
         map=dict(
             style="open-street-map",

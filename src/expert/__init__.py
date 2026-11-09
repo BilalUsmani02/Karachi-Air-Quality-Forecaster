@@ -32,7 +32,7 @@ def recommend(
     """Run the expert system end to end: build `Facts`, forward-chain, return the `Recommendation`.
 
     Args:
-        forecast_pm25: tomorrow's forecast 24-h mean PM2.5 (µg/m³).
+        forecast_pm25: the forecast day's 24-h mean PM2.5 (µg/m³).
         today_pm25: today's 24-h mean PM2.5, for the trend rules (R18-R20). `None` skips trend.
         sensitive: whether the person is in an EPA-defined sensitive group (§7 safeguard: a
             broad yes/no only — never a named medical condition).

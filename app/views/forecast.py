@@ -17,7 +17,6 @@ from app.state import get_background, get_bundle, missing_bundle_message
 from src.ui.banner import build_banner
 from src.ui.chart_data import build_chart_series
 from src.ui.data import get_app_snapshot
-from src.ui.explain_ui import build_sensor_explainer, feature_medians, shap_reasons_for_row
 from src.ui.format import format_pm25
 from src.ui.results import (
     SensorSummary,
@@ -92,6 +91,10 @@ def _render_banner(snapshot) -> None:
     st.info(f"**{banner.heading}**  \n{banner.last_updated}  \n{banner.source_text}")
     for warning in banner.warnings:
         st.warning(warning)
+    if banner.sensor_notes:
+        count = len(banner.sensor_notes)
+        with st.expander(f"{count} site{'s' if count != 1 else ''} without a forecast today"):
+            st.markdown("\n".join(f"- {note}" for note in banner.sensor_notes))
 
 
 def _render_sensor_picker(summaries: list[SensorSummary]) -> str | None:
@@ -138,12 +141,15 @@ def _render_profile_toggles() -> None:
 
 def _render_shap_section(bundle, snapshot, sensor_id: str) -> None:
     st.subheader("Why this forecast?")
-    background = get_background()
-    explainer = _cached_explainer(bundle, background)
-    medians = feature_medians(background)
-    row_raw = feature_row(snapshot, sensor_id)
-
     with st.spinner("Working out the top reasons…"):
+        # Imported here, not at the top: `shap` takes ~12 s to import, and the forecast and
+        # advice above should appear without waiting for it.
+        from src.ui.explain_ui import feature_medians
+
+        background = get_background()
+        explainer = _cached_explainer(bundle, background)
+        medians = feature_medians(background)
+        row_raw = feature_row(snapshot, sensor_id)
         reasons = _cached_reasons(
             bundle, explainer, row_raw, medians, snapshot.forecast_date, sensor_id, SHAP_TOP_K
         )
@@ -153,7 +159,7 @@ def _render_shap_section(bundle, snapshot, sensor_id: str) -> None:
 
 
 def _render_chart(snapshot, sensor_id: str) -> None:
-    st.subheader("Last 72 hours and tomorrow's forecast")
+    st.subheader("Last 72 hours and the forecast")
     series = build_chart_series(snapshot, sensor_id)
     st.plotly_chart(build_history_figure(series), width="stretch")
 
@@ -161,6 +167,8 @@ def _render_chart(snapshot, sensor_id: str) -> None:
 @st.cache_resource(show_spinner=False)
 def _cached_explainer(_bundle, _background):
     """One SHAP explainer per app process — building it is the expensive, reusable part."""
+    from src.ui.explain_ui import build_sensor_explainer
+
     return build_sensor_explainer(_bundle, _background, seed=SHAP_SEED, background_size=SHAP_BACKGROUND_SIZE)
 
 
@@ -168,4 +176,6 @@ def _cached_explainer(_bundle, _background):
 def _cached_reasons(_bundle, _explainer, _row_raw, _medians, forecast_date, sensor_id: str, k: int):
     """Per-sensor SHAP reasons, cached by (forecast_date, sensor_id) — a new day or a
     different sensor recomputes; re-selecting the same sensor on the same day doesn't."""
+    from src.ui.explain_ui import shap_reasons_for_row
+
     return shap_reasons_for_row(_explainer, _bundle, _row_raw, _medians, k=k)

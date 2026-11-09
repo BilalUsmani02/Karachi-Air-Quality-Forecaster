@@ -166,9 +166,9 @@ runs *after* every other rule.
 | R15 | band=VeryUnhealthy OR Hazardous, outdoor_activity=yes | "Cancel or move your planned outdoor activity indoors." | 5 | [2] |
 | R16 | band=Hazardous, sensitive=no | "Avoid all physical activity outdoors." | 5 | [2] |
 | R17 | band=Hazardous, sensitive=yes | "Remain indoors and keep activity levels low. Follow tips for keeping particle levels low indoors." | 5 | [2] |
-| R18 | trend=rising, band=USG | *(append)* "Conditions are forecast to worsen compared with today — plan ahead for tomorrow." | 3 | §7 design rule |
-| R19 | trend=rising, band ∈ {Unhealthy, VeryUnhealthy, Hazardous} | *(append)* "Air quality is forecast to be worse than today. If you're in a sensitive group, consider moving tomorrow's outdoor plans indoors now." | 4 | §7 design rule |
-| R20 | trend=falling, band ≥ USG | *(append)* "Air quality is forecast to improve compared with today." | 1 | §7 design rule |
+| R18 | trend=rising, band=USG | *(append)* "Conditions are forecast to worsen compared with the day before — plan ahead." | 3 | §7 design rule |
+| R19 | trend=rising, band ∈ {Unhealthy, VeryUnhealthy, Hazardous} | *(append)* "Air quality is forecast to be worse than the day before. If you're in a sensitive group, consider moving outdoor plans indoors." | 4 | §7 design rule |
+| R20 | trend=falling, band ≥ USG | *(append)* "Air quality is forecast to improve compared with the day before." | 1 | §7 design rule |
 | R21 | forecast within ±5 µg/m³ of a band boundary | *(meta)* classify into the worse (higher-severity) of the two adjacent bands; app states "near a boundary — showing the more cautious band." | 5 | §7 safeguard ("err on the safe side") |
 | R22 | always | *(append, every panel)* "This is general public-health guidance based on EPA and WHO air-quality guidance. It is informational only — not an official air-quality alert and not personal medical advice. If you have a heart or lung condition, follow your own doctor's advice." | — | §7 safeguard |
 

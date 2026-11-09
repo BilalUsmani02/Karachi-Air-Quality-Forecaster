@@ -43,7 +43,7 @@ def _render_metrics_section() -> None:
     st.caption(
         "Mean absolute error (MAE): how far off the forecast was, on average, in µg/m³ — "
         "lower is better. \"Skill\" is how much better a model did than simply guessing "
-        "\"tomorrow will look like yesterday\" (persistence)."
+        "\"each day will look like the day before\" (persistence)."
     )
     metrics = final_test_metrics()
     if metrics is None:
@@ -94,7 +94,7 @@ def _render_shap_section() -> None:
         return
 
     fig = go.Figure(
-        go.Bar(x=importance["mean_abs_shap"], y=importance["feature"], orientation="h", marker_color="#2ca02c")
+        go.Bar(x=importance["mean_abs_shap"], y=importance["what_it_means"], orientation="h", marker_color="#2ca02c")
     )
     fig.update_layout(
         xaxis_title="Mean |SHAP value| (µg/m³)",

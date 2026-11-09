@@ -4,11 +4,11 @@
 `FEATURE_UNITS` gives the unit its raw value is shown in. `group_contributions` merges the 14
 `sensor_*` one-hots into one "location" contribution (sum of their SHAP values — exactly one is
 1 per row, so the sum is really just that sensor's own contribution) and each wind u/v pair into
-one "wind direction" contribution per period (yesterday/tomorrow): on their own, a u or v
+one "wind direction" contribution per period (the day before / the forecast day): on their own, a u or v
 component is not a number anyone reads naturally. `top_reasons` turns the top-`k` grouped
 contributions into sentences such as:
 
-    "Tomorrow's wind speed was low (1.8 m/s), which raised the forecast by about 8 µg/m³."
+    "The forecast day's wind speed was low (1.8 m/s), which raised the forecast by about 8 µg/m³."
 
 Direction words ("raised"/"lowered") come from the SHAP value's sign; "low"/"high" compares the
 raw value against the training median passed in via `feature_medians`.
@@ -28,7 +28,7 @@ _SENSOR_FEATURES: tuple[str, ...] = tuple(f"sensor_{sid}" for sid in SENSOR_IDS)
 
 LOCATION_LABEL = "this location"
 PAST_WIND_LABEL = "yesterday's wind direction"
-FC_WIND_LABEL = "tomorrow's wind direction"
+FC_WIND_LABEL = "the forecast day's wind direction"
 
 # Every column in `src.models.dataset.FEATURE_COLUMNS` must have an entry here (tested in
 # `tests/test_explain_reasons.py`) — no feature falls back to showing its raw column name.
@@ -63,20 +63,20 @@ FEATURE_PHRASES: dict[str, str] = {
     "past_cams_no2": "yesterday's modelled nitrogen dioxide (traffic and industry pollution)",
     "past_cams_dust": "yesterday's modelled desert dust",
     "past_cams_aod": "yesterday's modelled haziness (aerosol optical depth)",
-    "fc_temperature_2m": "tomorrow's temperature",
-    "fc_relative_humidity_2m": "tomorrow's humidity",
-    "fc_dew_point_2m": "tomorrow's dew point (how damp the air will be)",
-    "fc_surface_pressure": "tomorrow's air pressure",
-    "fc_precipitation": "tomorrow's rainfall",
-    "fc_wind_speed_10m": "tomorrow's wind speed",
+    "fc_temperature_2m": "the forecast day's temperature",
+    "fc_relative_humidity_2m": "the forecast day's humidity",
+    "fc_dew_point_2m": "the forecast day's dew point (how damp the air will be)",
+    "fc_surface_pressure": "the forecast day's air pressure",
+    "fc_precipitation": "the forecast day's rainfall",
+    "fc_wind_speed_10m": "the forecast day's wind speed",
     "fc_wind_u": FC_WIND_LABEL,
     "fc_wind_v": FC_WIND_LABEL,
-    "fc_boundary_layer_height": "tomorrow's mixing height (how high pollution can spread)",
-    "fc_cams_pm2_5": "tomorrow's modelled PM2.5 (CAMS atmospheric model)",
-    "fc_cams_pm10": "tomorrow's modelled coarse dust (PM10)",
-    "fc_cams_no2": "tomorrow's modelled nitrogen dioxide (traffic and industry pollution)",
-    "fc_cams_dust": "tomorrow's modelled desert dust",
-    "fc_cams_aod": "tomorrow's modelled haziness (aerosol optical depth)",
+    "fc_boundary_layer_height": "the forecast day's mixing height (how high pollution can spread)",
+    "fc_cams_pm2_5": "the forecast day's modelled PM2.5 (CAMS atmospheric model)",
+    "fc_cams_pm10": "the forecast day's modelled coarse dust (PM10)",
+    "fc_cams_no2": "the forecast day's modelled nitrogen dioxide (traffic and industry pollution)",
+    "fc_cams_dust": "the forecast day's modelled desert dust",
+    "fc_cams_aod": "the forecast day's modelled haziness (aerosol optical depth)",
     **{f: LOCATION_LABEL for f in _SENSOR_FEATURES},
 }
 

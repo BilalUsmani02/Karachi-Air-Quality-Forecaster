@@ -13,8 +13,8 @@ from src.expert import explain, recommend
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Karachi Air-Quality Forecaster expert system (§7)")
-    parser.add_argument("--pm25", required=True, type=float, help="tomorrow's forecast PM2.5 (ug/m3)")
-    parser.add_argument("--today", default=None, type=float, help="today's PM2.5 (ug/m3), for the trend rules")
+    parser.add_argument("--pm25", required=True, type=float, help="the forecast day's PM2.5 (ug/m3)")
+    parser.add_argument("--today", default=None, type=float, help="the day before's PM2.5 (ug/m3), for the trend rules")
     parser.add_argument("--sensitive", action="store_true", help="person is in a sensitive group")
     parser.add_argument("--outdoor", action="store_true", help="person has outdoor plans")
     args = parser.parse_args()

@@ -15,7 +15,7 @@ def render() -> None:
 
     st.subheader("What this app does")
     st.write(
-        "It forecasts tomorrow's 24-hour average fine-dust level (PM2.5) at monitoring sites "
+        "Each midnight it forecasts the coming day's 24-hour average fine-dust level (PM2.5) at monitoring sites "
         "across Karachi, sorts that forecast into an official air-quality band (Good → "
         "Hazardous), and turns the band into plain health advice for your own situation."
     )
@@ -47,8 +47,8 @@ def render() -> None:
     st.subheader("How it works, in 4 steps")
     st.markdown(
         "1. **Gather:** the last few days of each sensor's readings, plus weather and CAMS "
-        "data for yesterday and tomorrow.\n"
-        "2. **Forecast:** a trained model combines all of that into one number — tomorrow's "
+        "data for the day before and the forecast day.\n"
+        "2. **Forecast:** a trained model combines all of that into one number — the day's "
         "expected 24-hour average PM2.5 for each site.\n"
         "3. **Classify:** that number is sorted into an EPA air-quality band (Good, Moderate, "
         "Unhealthy for Sensitive Groups, Unhealthy, Very Unhealthy or Hazardous).\n"
@@ -60,7 +60,7 @@ def render() -> None:
     st.markdown(
         "- The rarest, most severe days (**Very Unhealthy**) are the ones the model catches "
         "least often — averaging several models together smooths out extreme forecasts.\n"
-        "- Live forecasts use tomorrow's **weather forecast**, which is never as accurate as "
+        "- Live forecasts use a **weather forecast** for the day, which is never as accurate as "
         "the recorded weather the model was trained and tested with — real-world accuracy "
         "will usually be a little lower than the numbers on the comparison page.\n"
         "- The sensors are **low-cost** air-quality monitors, not reference-grade instruments "

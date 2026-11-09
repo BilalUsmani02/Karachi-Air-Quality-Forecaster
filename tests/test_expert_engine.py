@@ -173,7 +173,7 @@ def test_trend_rising_unhealthy_or_worse_fires_r19_not_r18():
     fired_ids = [fr.rule.id for fr in rec.fired]
     assert "R19" in fired_ids
     assert "R18" not in fired_ids
-    assert any("worse than today" in note for note in rec.notes)
+    assert any("worse than the day before" in note for note in rec.notes)
 
 
 def test_trend_falling_usg_or_worse_fires_r20():

@@ -7,9 +7,17 @@ Model comparison, and About & data. Page config lives here; everything else is i
 
 from __future__ import annotations
 
-import streamlit as st
+import sys
+from pathlib import Path
 
-from app.views import about, compare, forecast
+# `streamlit run` puts only app/ on the import path; add the repo root so `app.*` and `src.*` import.
+ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+import streamlit as st  # noqa: E402
+
+from app.views import about, compare, forecast  # noqa: E402
 
 st.set_page_config(
     page_title="Karachi Air-Quality Forecaster",

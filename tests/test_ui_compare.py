@@ -68,7 +68,7 @@ def results_dir(tmp_path):
 def test_final_test_metrics_is_relabelled_and_in_display_order(results_dir):
     metrics = final_test_metrics(results_dir)
     assert list(metrics["model"]) == [
-        "Persistence (yesterday = tomorrow)",
+        "Persistence (forecast = the day before)",
         "Ridge regression",
         "Random Forest",
         "Gradient Boosting",

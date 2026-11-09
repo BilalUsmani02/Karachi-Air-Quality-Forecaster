@@ -20,8 +20,8 @@ Worked example, sensor S11 on 20 December 2025 (`results/explain/example_explana
 | Base value (average forecast) | 49.2 |
 | + yesterday's average PM2.5 was high (137.3) | +37.5 |
 | + the PM2.5 level an hour ago was high (195.0) | +19.1 |
-| + tomorrow's modelled PM2.5 is high (59.3) | +13.3 |
-| + tomorrow's modelled nitrogen dioxide is high (55.0) | +11.7 |
+| + the forecast day's modelled PM2.5 is high (59.3) | +13.3 |
+| + the forecast day's modelled nitrogen dioxide is high (55.0) | +11.7 |
 | + the remaining 54 features, combined (e.g. `pm25_mean_72h` +6.9, `pm25_std_24h` -6.6, …) | +26.5 |
 | = **Forecast** | **157.3** |
 
@@ -75,12 +75,12 @@ Ranked by the ensemble explainer's mean |SHAP value| across the 300-row sample
 |---|---|---|---|
 | 1 | `pm25_prev_day_mean` | 11.4 | Yesterday's average PM2.5 — pollution persists day to day (smog doesn't clear overnight). |
 | 2 | `pm25_lag_1h` | 4.9 | The most recent hourly reading — the freshest signal of current conditions. |
-| 3 | `fc_cams_pm2_5` | 3.0 | Tomorrow's modelled PM2.5 from the CAMS atmospheric model — an independent forecast the model leans on. |
-| 4 | `fc_cams_no2` | 2.8 | Tomorrow's modelled nitrogen dioxide — a proxy for traffic/industrial pollution tomorrow. |
+| 3 | `fc_cams_pm2_5` | 3.0 | The forecast day's modelled PM2.5 from the CAMS atmospheric model — an independent forecast the model leans on. |
+| 4 | `fc_cams_no2` | 2.8 | The forecast day's modelled nitrogen dioxide — a proxy for traffic/industrial pollution on the forecast day. |
 | 5 | `pm25_std_24h` | 1.9 | How much PM2.5 swung up and down yesterday — volatile days are harder to extrapolate from. |
 | 6 | `pm25_mean_72h` | 1.6 | The last three days' average — a longer-memory smoothed signal than yesterday alone. |
-| 7 | `fc_wind_u` (+ `fc_wind_v`) | 1.3 | Tomorrow's wind direction — which way pollution gets blown in or out of the area. |
-| 8 | `fc_wind_speed_10m` | 1.2 | Tomorrow's wind speed — calmer air traps pollution near the ground; stronger wind disperses it. |
+| 7 | `fc_wind_u` (+ `fc_wind_v`) | 1.3 | The forecast day's wind direction — which way pollution gets blown in or out of the area. |
+| 8 | `fc_wind_speed_10m` | 1.2 | The forecast day's wind speed — calmer air traps pollution near the ground; stronger wind disperses it. |
 
 Two physical patterns stand out. First, **persistence dominates**: the three most recent-PM2.5
 features together outweigh every weather feature combined, confirming the project's own
@@ -126,7 +126,7 @@ The two methods mostly agree on *what* matters, less so on the exact order:
   November 2026), and the brief history means its idea of "what matters" is itself a choice the
   model made from limited examples, not an atmospheric-science finding.
 - **Forecast-day weather is a stand-in.** Every `fc_*` feature in the explanation is Open-Meteo's
-  *recorded* weather for that day used as a perfect-prognosis substitute for tomorrow's weather
+  *recorded* weather for that day used as a perfect-prognosis substitute for the forecast day's weather
   forecast (`docs/report/model_selection.md`). Live SHAP values in the app will look the same in
   shape, but the underlying `fc_*` numbers will carry whatever error is in the live weather
   forecast itself.

@@ -56,9 +56,10 @@ uv run streamlit run app/main.py
 That one command is enough — it works **offline**: on first load it shows a cached forecast
 if one exists, or falls back to a demo day from the stored historical data, no internet
 connection or API keys needed. Inside the app, use the **🔄 Refresh live data** button on the
-Forecast page to try fetching the latest readings and weather; if that fails (or the live
-pipeline isn't available), it falls back to the cache, then the demo, and says so with a
-warning banner. If `models/final_ensemble.pkl` is missing, the app shows the command to build
+Forecast page to try fetching the latest readings and weather; if that fails, it falls back to the cache, then the demo, and says so with a
+warning banner. A live refresh takes about 2–3 minutes (OpenAQ limits the request rate) and
+needs `OPENAQ_API_KEY` in `.env`; `uv run python -m src.live --refresh` does the same from the
+terminal. If `models/final_ensemble.pkl` is missing, the app shows the command to build
 it (`uv run python -m src.evaluate.final_test --save-production`) instead of crashing.
 
 ### Download the data (Phase 1)

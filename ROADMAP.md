@@ -17,7 +17,7 @@
 | 4 | NumPy network | ✅ Done | 8 Nov 2026 | 8 Nov 2026 |
 | 5 | Improve + classify | ✅ Done | 8 Nov 2026 | 10 Nov 2026 |
 | 6 | Rules + explanations | ✅ Done | 10 Nov 2026 | 10 Nov 2026 |
-| 7 | App | 🟨 In progress | 10 Nov 2026 | |
+| 7 | App | ✅ Done | 10 Nov 2026 | 10 Nov 2026 |
 | 8 | Reports + viva | ⬜ Not started | | |
 | 9 | Stretch (optional) | ⬜ Not started | | |
 
@@ -272,22 +272,31 @@ monsoon validation block had zero Unhealthy days (spec §5.3).
 **Goal:** a demo anyone can use, even offline.
 **Effort:** ~1 week · **Spec:** §9, §10
 
-- [ ] Sensor picker: dropdown + map
-- [ ] Forecast value + colour-coded band
-- [ ] Advice + "You see this because…" rule trace
-- [ ] Top SHAP reasons
-- [ ] Chart: recent readings + forecast
-- [ ] Model comparison page
-- [ ] Profile toggles kept in session only (not stored or logged)
-- [ ] Cache + "last updated" banner + warning when live fetch fails
-- [ ] Disclaimer: informational, not official health advice; data sources + model version shown
+- [x] Sensor picker: dropdown + map (click a dot to choose a site)
+- [x] Forecast value + colour-coded band
+- [x] Advice + "You see this because…" rule trace
+- [x] Top SHAP reasons
+- [x] Chart: recent readings + forecast
+- [x] Model comparison page
+- [x] Profile toggles kept in session only (not stored or logged)
+- [x] Cache + "last updated" banner + warning when live fetch fails
+- [x] Disclaimer: informational, not official health advice; data sources + model version shown
 
 **Done when:**
-- [ ] App runs from one command in the README
-- [ ] Demo works with the internet switched off
-- [ ] A non-technical person can read the result without help
+- [x] App runs from one command in the README (`uv run streamlit run app/main.py`)
+- [x] Demo works with the internet switched off (cache, else a demo day from stored data)
+- [ ] A non-technical person can read the result without help — ask a group member or friend to try it
 
 **Notes:**
+- Live pipeline (`src/live/`): the forecast covers the day starting at 00:00 PKT, so every input
+  is complete when it is issued. Live inputs matched the stored training rows on 13 real days.
+  A live refresh takes ~2.5 min (OpenAQ rate limit).
+- First live run (10 Nov 2026): 9 of 14 sensors forecast; 4 had no readings for 10 days and 1
+  had too few the day before.
+- Checked in a real browser, which found 3 bugs the automated tests missed: the app could not
+  start (`No module named 'app'`), the map never drew (invalid marker setting), and the wording
+  said "tomorrow" for a same-day forecast. All fixed, with tests for the first two.
+- First page load takes ~5 s (scikit-learn); SHAP loads afterwards, only for the reasons section.
 
 ---
 

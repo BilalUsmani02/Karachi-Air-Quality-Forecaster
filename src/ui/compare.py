@@ -17,7 +17,7 @@ from src.config import RESULTS_DIR
 # `classification.csv`. The app predicts with the ensemble — called out explicitly, since a
 # non-technical reader otherwise has no way to know which row is "what I'm using".
 MODEL_DISPLAY_NAMES: dict[str, str] = {
-    "persistence": "Persistence (yesterday = tomorrow)",
+    "persistence": "Persistence (forecast = the day before)",
     "ridge": "Ridge regression",
     "random_forest": "Random Forest",
     "hist_gb": "Gradient Boosting",
@@ -37,9 +37,10 @@ NUMPY_VS_PYTORCH_NOTE = (
 )
 
 FAIRNESS_CAVEAT = (
-    "This model is forecast noticeably worse at some sites than others (often the ones with "
-    "more missing readings or more polluted air on average) — treat any single site's forecast "
-    "as less certain than the city-wide numbers above suggest."
+    "Checked with the Random Forest model during development. Errors are larger at the more "
+    "polluted sites (such as Orangi), mainly because their pollution levels are higher, not "
+    "because of missing readings. Treat any single site's forecast as less certain than the "
+    "city-wide numbers above suggest."
 )
 
 

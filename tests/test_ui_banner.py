@@ -35,3 +35,12 @@ def test_banner_has_no_warnings_when_the_snapshot_has_none(fake_snapshot):
     )
     banner = build_banner(live)
     assert banner.warnings == ()
+
+
+def test_per_site_no_forecast_notes_are_grouped_apart_from_warnings(fake_snapshot):
+    from src.ui.banner import build_banner
+
+    snapshot = fake_snapshot.with_source("live", "S2 Zafar Memon DHA: no readings in the last 10 days, no forecast.")
+    banner = build_banner(snapshot)
+    assert banner.sensor_notes == ("S2 Zafar Memon DHA: no readings in the last 10 days, no forecast.",)
+    assert all(not w.endswith(", no forecast.") for w in banner.warnings)

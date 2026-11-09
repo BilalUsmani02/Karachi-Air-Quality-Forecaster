@@ -21,7 +21,12 @@ class Banner:
     heading: str  # "Forecast for Tuesday, 10 November 2026 (24-hour average), issued 00:00 PKT"
     last_updated: str  # "Last updated 10 Nov 2026, 14:32 PKT"
     source_text: str  # "Source: Live data"
-    warnings: tuple[str, ...]
+    warnings: tuple[str, ...]  # shown one by one
+    sensor_notes: tuple[str, ...] = ()  # per-site "no forecast" notes, shown grouped in one box
+
+
+# The live pipeline ends every per-site skip message with this (src/live/pipeline.py).
+SENSOR_NOTE_SUFFIX = ", no forecast."
 
 
 def build_banner(snapshot: Snapshot) -> Banner:
@@ -36,5 +41,6 @@ def build_banner(snapshot: Snapshot) -> Banner:
         heading=heading,
         last_updated=last_updated,
         source_text=source_text,
-        warnings=snapshot.warnings,
+        warnings=tuple(w for w in snapshot.warnings if not w.endswith(SENSOR_NOTE_SUFFIX)),
+        sensor_notes=tuple(w for w in snapshot.warnings if w.endswith(SENSOR_NOTE_SUFFIX)),
     )

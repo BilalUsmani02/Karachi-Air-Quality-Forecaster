@@ -171,10 +171,10 @@ You see this because…
 
 Inputs:
   - forecast PM2.5 = 33.0 ug/m3 -> band = Moderate
-  - today's PM2.5 = 25.0
+  - the day before's PM2.5 = 25.0
   - sensitive group = yes
   - outdoor activity planned = yes
-  - trend vs today = rising
+  - trend vs the day before = rising
 
 Safety margin: the forecast is within 5 ug/m3 of the next band's lower boundary, so the
 advice below uses the more cautious Unhealthy for Sensitive Groups band instead of the
@@ -198,7 +198,7 @@ Winning advice rule: R07 (usg_sensitive_outdoor).
   watch for symptoms such as coughing or shortness of breath."
 Additional notes:
   - Near a boundary - showing the more cautious advice for Unhealthy for Sensitive Groups.
-  - Conditions are forecast to worsen compared with today - plan ahead for tomorrow.
+  - Conditions are forecast to worsen compared with the day before - plan ahead.
 
 Disclaimer (always shown): "This is general public-health guidance based on EPA and WHO
 air-quality guidance. It is informational only..."

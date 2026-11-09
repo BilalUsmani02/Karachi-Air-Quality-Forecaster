@@ -242,7 +242,7 @@ APPEND_RULES: tuple[Rule, ...] = (
         "R18", "trend_rising_usg",
         (C("trend", "==", "rising"), C("advice_band", "==", 2)),
         "append",
-        "Conditions are forecast to worsen compared with today — plan ahead for tomorrow.",
+        "Conditions are forecast to worsen compared with the day before — plan ahead.",
         3, "§7 design rule",
         "the trend is rising and the advice band is USG",
     ),
@@ -250,8 +250,8 @@ APPEND_RULES: tuple[Rule, ...] = (
         "R19", "trend_rising_unhealthy_or_worse",
         (C("trend", "==", "rising"), C("advice_band", "in", (3, 4, 5))),
         "append",
-        "Air quality is forecast to be worse than today. If you're in a sensitive group, "
-        "consider moving tomorrow's outdoor plans indoors now.",
+        "Air quality is forecast to be worse than the day before. If you're in a sensitive "
+        "group, consider moving outdoor plans indoors.",
         4, "§7 design rule",
         "the trend is rising and the advice band is Unhealthy or worse",
     ),
@@ -259,7 +259,7 @@ APPEND_RULES: tuple[Rule, ...] = (
         "R20", "trend_falling_usg_or_worse",
         (C("trend", "==", "falling"), C("advice_band", ">=", 2)),
         "append",
-        "Air quality is forecast to improve compared with today.",
+        "Air quality is forecast to improve compared with the day before.",
         1, "§7 design rule",
         "the trend is falling and the advice band is USG or worse",
     ),

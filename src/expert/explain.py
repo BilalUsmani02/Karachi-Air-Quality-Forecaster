@@ -47,10 +47,10 @@ def explain(rec: Recommendation) -> str:
         f"  - forecast PM2.5 = {_format_value(wm['forecast_pm25'])} µg/m³ "
         f"-> band = {rec.band_name}"
     )
-    lines.append(f"  - today's PM2.5 = {_format_value(wm['today_pm25'])}")
+    lines.append(f"  - the day before's PM2.5 = {_format_value(wm['today_pm25'])}")
     lines.append(f"  - sensitive group = {_format_value(wm['sensitive'])}")
     lines.append(f"  - outdoor activity planned = {_format_value(wm['outdoor_activity'])}")
-    lines.append(f"  - trend vs today = {_format_value(wm['trend'])}")
+    lines.append(f"  - trend vs the day before = {_format_value(wm['trend'])}")
     lines.append("")
 
     if wm["near_boundary"]:

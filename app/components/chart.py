@@ -16,7 +16,7 @@ FORECAST_COLOR = "#d62728"
 
 
 def build_history_figure(series: ChartSeries) -> go.Figure:
-    """A plotly figure: last 72 h measured PM2.5, plus tomorrow's forecast as a flat segment."""
+    """A plotly figure: last 72 h measured PM2.5, plus the forecast day as a flat segment."""
     fig = go.Figure()
 
     for stripe in series.band_stripes:
@@ -43,7 +43,7 @@ def build_history_figure(series: ChartSeries) -> go.Figure:
             x=[series.forecast_start, series.forecast_end],
             y=[series.forecast_value, series.forecast_value],
             mode="lines",
-            name="Tomorrow's forecast (one number for the whole day)",
+            name="Forecast for the day (one number for the whole day)",
             line=dict(color=FORECAST_COLOR, width=4, dash="dash"),
         )
     )
