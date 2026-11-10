@@ -8,9 +8,10 @@
 
 ## 1. What we are making
 
-A tool that forecasts how polluted the air in Karachi will be **tomorrow**. It predicts the
-**24-hour average** level of fine dust particles (**PM2.5**, µg/m³) at **14 real sensors**
-run by **The Urban Unit**, sorts each forecast into an
+A tool that forecasts how polluted the air in Karachi will be. It predicts the
+**24-hour average** level of fine dust particles (**PM2.5**, µg/m³) for the day ahead, issued
+at **00:00 PKT**, at **14 real sensors** run by **The Urban Unit** (about 9 report at any given
+time), sorts each forecast into an
 air-quality band (Good → Hazardous), and gives plain health advice for it.
 
 At its heart is a **neural network written entirely by hand in NumPy** (no deep-learning
@@ -40,9 +41,9 @@ report, the demo and the viva.
 
 | Course | Lead with | Primary task | Supporting parts |
 |---|---|---|---|
-| **PAI (CT-264)** | The from-scratch NumPy network and its comparison with PyTorch / scikit-learn | Regression: next-day PM2.5 | Bands, rules, app |
-| **AIES CCP (CT-361)** | Choosing AI techniques for a **classification** problem + the expert system | **Classification: tomorrow's AQI band** | Regression route, SHAP, app |
-| **AIES Lab CCA (CT-361)** | Same as CCP, shown live: inputs/outputs, why each model, real-life use | **Classification: tomorrow's AQI band** | Same as CCP |
+| **PAI (CT-264)** | The from-scratch NumPy network and its comparison with PyTorch / scikit-learn | Regression: day-D PM2.5 (24-h avg, issued 00:00 PKT) | Bands, rules, app |
+| **AIES CCP (CT-361)** | Choosing AI techniques for a **classification** problem + the expert system | **Classification: day-D AQI band** | Regression route, SHAP, app |
+| **AIES Lab CCA (CT-361)** | Same as CCP, shown live: inputs/outputs, why each model, real-life use | **Classification: day-D AQI band** | Same as CCP |
 
 Both AIES CLOs say "classification problems", so in AIES material the band classifier is the
 **main task** and the PM2.5 regression is presented as one of two routes to it (§6.4) — not
@@ -164,8 +165,8 @@ Where each requirement is satisfied. Keep this table updated as the build progre
 
 | Course | Title |
 |---|---|
-| PAI | Karachi Air-Quality Forecaster: A From-Scratch NumPy Neural Network for Next-Day PM2.5 Forecasting, Benchmarked Against PyTorch and scikit-learn |
-| AIES CCP + Lab | Karachi Air-Quality Forecaster: Next-Day AQI Band Classification with a Rule-Based Expert System for Explainable Health Advice |
+| PAI | Karachi Air-Quality Forecaster: A From-Scratch NumPy Neural Network for Day-Ahead PM2.5 Forecasting, Benchmarked Against PyTorch and scikit-learn |
+| AIES CCP + Lab | Karachi Air-Quality Forecaster: Day-Ahead AQI Band Classification with a Rule-Based Expert System for Explainable Health Advice |
 
 ### 4.2 AIES CCP wording (issue / impact / approach)
 
@@ -173,11 +174,11 @@ Where each requirement is satisfied. Keep this table updated as the build progre
 current readings, not what is coming.
 
 **Real-world impact:** Fine particles cause respiratory and heart disease. Children, older
-people and people with asthma are hit hardest. Knowing tomorrow's air-quality band lets people
-plan their exposure.
+people and people with asthma are hit hardest. Knowing each day's air-quality band, issued at
+00:00 PKT, lets people plan their exposure.
 
-**AI / ES approach:** A hybrid system. Supervised classifiers predict tomorrow's AQI band at each
-sensor, by two routes: (1) a regression model forecasts the 24-h mean PM2.5, which is then
+**AI / ES approach:** A hybrid system. Supervised classifiers predict the day's AQI band at each
+sensor, issued at 00:00 PKT, by two routes: (1) a regression model forecasts the 24-h mean PM2.5, which is then
 banded; (2) a classifier predicts the band directly. Both start from a baseline and improve
 through stronger models, tuning and ensembling. A forward-chaining rule base turns the band and
 the user's profile into personalised advice. SHAP and rule traces explain every output.
@@ -185,11 +186,11 @@ the user's profile into personalised advice. SHAP and rule traces explain every 
 ### 4.3 AIES Lab wording (context and objectives / significance / approach)
 
 **Context and objectives:** Karachi's air is often unhealthy, and residents only see current
-readings. Objective: classify tomorrow's air-quality band at 9 sensor sites and give
-personalised, explained advice.
+readings. Objective: classify each day's air-quality band, issued at 00:00 PKT, across 14
+sensor sites (about 9 reporting at any given time) and give personalised, explained advice.
 
 **Real-world significance:** Lets sensitive groups (children, older people, people with asthma)
-plan outdoor activity a day ahead.
+plan outdoor activity as soon as each day's forecast is issued (00:00 PKT).
 
 **AI / ES approach:** Same as §4.2.
 
@@ -202,9 +203,9 @@ validated against PyTorch and compared with standard machine learning models. Ex
 will highlight the main factors behind each prediction, and a Streamlit dashboard will display
 forecasts and health alerts.
 
-**Objective:** Build a neural network from scratch in NumPy that forecasts next-day 24-h mean
-PM2.5, verify it against an identical PyTorch network, and compare it with scikit-learn
-models. Bands, rules and SHAP make the output usable in a Streamlit app.
+**Objective:** Build a neural network from scratch in NumPy that forecasts day D's 24-h mean
+PM2.5 (issued 00:00 PKT), verify it against an identical PyTorch network, and compare it with
+scikit-learn models. Bands, rules and SHAP make the output usable in a Streamlit app.
 
 ---
 
@@ -330,7 +331,7 @@ so it is a city-wide feature; ERA5 weather (D2) resolves to ~4 distinct cells ac
 
 ### 6.1 Forecast task
 
-- **Regression target:** the **24-hour mean PM2.5 for the next day** at each sensor (§5.3).
+- **Regression target:** the **24-hour mean PM2.5 for day D**, issued at 00:00 PKT, at each sensor (§5.3).
   This matches the EPA breakpoints, which are defined on 24-h averages — banding a single
   hourly value would mislabel days.
 - **Classification target:** the AQI band of that 24-h mean (§6.4).
@@ -584,7 +585,7 @@ stretch items (Phase 9) only if time is left after the reports are drafted.
 
 - [x] Sensor history — available via OpenAQ (key in `.env`): 14 sensors, Jun 2025 → Nov 2026 (§5.2).
 - [x] Operator confirmed — The Urban Unit (AirGradient sensors).
-- [x] Forecast horizon — **decided:** next-day 24-h mean (hourly = stretch, chart only).
+- [x] Forecast horizon — **decided:** day-D 24-h mean, issued at 00:00 PKT (hourly = stretch, chart only).
 - [x] One project for all three courses — **decided** (Bilal, 21 Oct 2026).
 - [x] Instructor approval for the shared project — **approved** (21 Oct 2026).
 - [x] PAI brief — none exists; the overview is the reference. Deadline: ASAP.

@@ -1,7 +1,7 @@
 [project]
 name = "karachi-aq-forecaster"
 version = "0.1.0"
-description = "Next-day PM2.5 forecasting and AQI band classification for Karachi, with a from-scratch NumPy neural network, a rule-based expert system and SHAP explanations."
+description = "PM2.5 forecasting (24-hour average for the day ahead, issued 00:00 PKT) and AQI band classification for Karachi, with a from-scratch NumPy neural network, a rule-based expert system and SHAP explanations."
 readme = "README.md"
 requires-python = ">=3.11,<3.13"
 dependencies = [

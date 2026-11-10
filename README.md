@@ -1,7 +1,8 @@
 # Karachi Air-Quality Forecaster
 
-Forecasts tomorrow's average fine-dust level (PM2.5) at 9 sensor sites in Karachi, sorts it
-into an air-quality band (Good → Hazardous), and gives personalised, explained health advice.
+Forecasts the 24-hour average fine-dust level (PM2.5) for the day ahead, issued at 00:00 PKT,
+at 14 real sensors in Karachi (about 9 report at any given time), sorts it into an air-quality
+band (Good → Hazardous), and gives personalised, explained health advice.
 
 - **Core model:** a neural network written from scratch in NumPy, checked against PyTorch and
   compared with scikit-learn models.
@@ -85,7 +86,66 @@ uv run python -m src.data.build_features   # raw → data/processed/{hourly_clea
 `data/processed/build_report.json` records how many hours were cleaned and how many daily rows
 were kept or dropped. Table formats and cleaning rules: `docs/design/phase2_data_contract.md`.
 
-Training commands are added here as each phase lands.
+## Reproduce everything
+
+Every command below, in order, from a bare clone to a running app. Pipeline diagram and a
+one-page walkthrough of each stage: `docs/report/figures/pipeline.svg` /
+`docs/report/methodology.md`.
+
+```bash
+# 1. Data (needs OPENAQ_API_KEY in .env — register at https://explore.openaq.org)
+uv run python -m src.data.download_sensors                           # D1: 14 sensors (OpenAQ)
+uv run python -m src.data.download_sensors --consulate               # D5: US Consulate monitor
+uv run python -m src.data.download_weather --start 2025-05-01        # D2: ERA5 weather
+uv run python -m src.data.download_air_quality --start 2025-05-01    # D3: CAMS air quality
+
+# 2. Features
+uv run python -m src.data.build_features
+
+# 3. Baselines (persistence, Ridge, RF, logistic, RF classifier) on the CV folds
+uv run python -m src.evaluate.run_cv
+
+# 4. Tuning (classical models, then the NumPy MLP)
+uv run python -m src.evaluate.tune_classical
+uv run python -m src.evaluate.tune_mlp
+
+# 5. Final test — scores the frozen settings once, then saves the production model
+uv run python -m src.evaluate.final_test
+uv run python -m src.evaluate.final_test --save-production
+
+# 6. Explainability report (SHAP)
+uv run python -m src.explain --features data/processed/features.parquet --bundle models/final_ensemble.pkl
+
+# 7. Expert-system demo (prints advice + rule trace for one forecast)
+uv run python -m src.expert --pm25 33 --today 25 --sensitive --outdoor
+
+# 8. Live snapshot (today's forecast from live data, needs OPENAQ_API_KEY)
+uv run python -m src.live --refresh
+
+# 9. App
+uv run streamlit run app/main.py
+```
+
+| # | Command | Writes | Roughly takes |
+|---|---|---|---|
+| 1a | `download_sensors` | `data/raw/sensors/S*.csv` + manifest | ~4-5 min (1 request per sensor per month, rate-limited) |
+| 1b | `download_sensors --consulate` | `data/raw/us_consulate/*.csv` + manifest | ~1-2 min (1 sensor, ~75 months) |
+| 1c | `download_weather` | `data/raw/weather/S*.csv` + manifest | ~1-2 min (14 sequential requests, no rate limit) |
+| 1d | `download_air_quality` | `data/raw/air_quality/S*.csv` + manifest | ~1-2 min |
+| 2 | `build_features` | `data/processed/{hourly_clean,features}.parquet`, `build_report.json` | ~1-2 min |
+| 3 | `run_cv` | `results/baselines_cv_{folds,pooled,predictions}.*`, `baselines_summary.md` | a few minutes (8 CV folds × 5 baseline models) |
+| 4a | `tune_classical` | `results/tuning/*_best.json`, `*_trials.csv`, `classical_summary.md` | ~50 min (grid search over Ridge/RF/HistGB + classifiers) |
+| 4b | `tune_mlp` | `results/tuning/mlp_numpy_*` | ~7-8 min |
+| 5a | `final_test` | `results/final_test/{metrics.csv,classification.csv,predictions.parquet,summary.md,run.json}` | ~1-2 min (refits each tuned model once on the development set). **Refuses to rerun** once `results/final_test/run.json` exists — pass `--force` only if something upstream genuinely changed |
+| 5b | `final_test --save-production` | `models/final_ensemble.pkl` | under a minute (refits the frozen ensemble on all rows) |
+| 6 | `src.explain` | `results/explain/{global_importance.csv,shap_summary.png,example_explanations.md}` | ~1-5 min (TreeExplainer is fast; the KernelExplainer cross-check on a 300-row sample is the slow part, ≈4.5 min — `docs/report/explainability.md`) |
+| 7 | `src.expert` | stdout only (advice + fired rules) | under a second |
+| 8 | `src.live --refresh` | `data/cache/` snapshot | ~2-3 min (OpenAQ rate limit) |
+| 9 | `streamlit run app/main.py` | — | first load ~5 s; the SHAP reasons section adds ~15 s the first time it runs |
+
+Existing raw files are skipped on re-run; add `--force` to re-download. Steps 3-6 all read
+`data/processed/features.parquet`, so step 2 must run first; step 5b must run before step 6
+or the app, since both need `models/final_ensemble.pkl`.
 
 ## Project layout
 
