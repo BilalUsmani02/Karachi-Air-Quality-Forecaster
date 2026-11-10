@@ -26,6 +26,12 @@ back to the same hand-verified numbers otherwise.
 CLI: `uv run python -m src.evaluate.fairness --predictions PATH --model NAME [--route ROUTE]
 [--features PATH] [--out-dir results/fairness]` writes `<out-dir>/<model>/per_sensor.csv`,
 `summary.json`, `fairness_report.md` and `per_sensor_mae.png`.
+
+Without `--predictions`, the model is read from the saved tuning CV predictions instead
+(`--tuning-dir`, default `results/tuning/`): `--model ensemble` rebuilds the production ensemble
+(mean of `hist_gb` and `mlp_numpy`, `ensemble_cv.load_ensemble_cv`); any other name reads
+`<model>_cv_predictions.parquet` (a regressor's file). Per-site band metrics (accuracy,
+Unhealthy-or-worse miss rate, false-alarm rate) come from the regress-then-band columns.
 """
 
 from __future__ import annotations
@@ -44,6 +50,7 @@ import pandas as pd
 from scipy.stats import spearmanr
 
 from src.data.sensors import SENSORS, sensor_by_id
+from src.evaluate.ensemble_cv import TUNING_DIR, cv_predictions_path, load_ensemble_cv
 from src.evaluate.metrics import classification_metrics
 
 UNHEALTHY_BAND_INDEX = 3  # merged band index >= 3 is Unhealthy or worse (bands.py, spec §10)
@@ -508,16 +515,48 @@ def run(predictions_path: Path, model: str, route: str | None, features_path: Pa
     return model_dir
 
 
+def load_tuning_regressor(tuning_dir: Path, model: str) -> pd.DataFrame:
+    """A regressor's pooled CV table from the saved tuning files (`ensemble` = GB + network mean)."""
+    if model == "ensemble":
+        return load_ensemble_cv(tuning_dir)
+    table = pd.read_parquet(cv_predictions_path(tuning_dir, model))
+    missing = {"persistence", "band_true", "band_pred"} - set(table.columns)
+    if missing:
+        raise ValueError(f"{model!r} is not a regressor CV table (missing {sorted(missing)})")
+    return table
+
+
+def run_from_tuning(tuning_dir: Path, model: str, features_path: Path | None, out_dir: Path) -> Path:
+    """Fairness report for a regressor scored on the pooled CV rows (tune.py format).
+
+    Writes the same files as `run` does for a regressor: per-sensor MAE and skill, plus per-site
+    band accuracy, Unhealthy-or-worse miss rate and false-alarm rate (regress-then-band).
+    """
+    table = load_tuning_regressor(tuning_dir, model)
+    per_sensor = per_sensor_regression(table)
+    summary = disparity_summary(per_sensor)
+    explained = explain_disparity(per_sensor, build_coverage_table(features_path))
+    bands = table[["sensor_id"]].assign(y_true=table["band_true"].to_numpy(), y_pred=table["band_pred"].to_numpy())
+    per_sensor_clf = per_sensor_classification(bands)
+    model_dir = out_dir / model
+    write_report(explained, summary, model_dir, model, "regress_then_band", per_sensor_clf)
+    return model_dir
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Per-sensor fairness check (spec §10)")
-    parser.add_argument("--predictions", required=True, type=Path)
+    parser.add_argument("--predictions", default=None, type=Path)
+    parser.add_argument("--tuning-dir", default=TUNING_DIR, type=Path)
     parser.add_argument("--model", required=True)
     parser.add_argument("--route", default=None)
     parser.add_argument("--features", default=None, type=Path)
     parser.add_argument("--out-dir", default=Path("results/fairness"), type=Path)
     args = parser.parse_args()
 
-    out_path = run(args.predictions, args.model, args.route, args.features, args.out_dir)
+    if args.predictions is None:
+        out_path = run_from_tuning(args.tuning_dir, args.model, args.features, args.out_dir)
+    else:
+        out_path = run(args.predictions, args.model, args.route, args.features, args.out_dir)
     print(f"Wrote fairness report to {out_path}")
 
 

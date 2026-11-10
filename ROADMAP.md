@@ -151,7 +151,7 @@ monsoon validation block had zero Unhealthy days (spec §5.3).
 - [x] Metrics module has tests
 
 **Notes:**
-- 8 Nov 2026 — pooled over the 8 CV folds (2,224 sensor-days, Jan–Aug 2026), `results/baselines_summary.md`:
+- 8 Nov 2026 — pooled over the 8 CV folds (1,458 sensor-days, 1 Jan – 28 Aug 2026; corrected from a mistyped 2,224 on 10 Nov 2026), `results/baselines_summary.md`:
 
   | Model | MAE µg/m³ | RMSE | R² | Skill vs persistence |
   |---|---|---|---|---|

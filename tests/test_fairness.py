@@ -368,3 +368,67 @@ def test_filter_detects_task_from_score_predictions_shape_without_task_column():
     _, task_c = fr._filter(classifier_like.assign(model="m"), "m", None)
     assert task_r == "regression"
     assert task_c == "classification"
+
+
+# --- ensemble from saved tuning CV predictions --------------------------------------------
+
+
+def _write_tuning_regressors(root: Path) -> Path:
+    """hist_gb / mlp_numpy CV tables (tune.py format) whose mean is a known forecast."""
+    root.mkdir(parents=True, exist_ok=True)
+    y_true = np.array([20.0, 60.0, 70.0, 30.0, 80.0, 40.0])
+    base = pd.DataFrame(
+        {
+            "sensor_id": ["S1", "S1", "S1", "S2", "S2", "S2"],
+            "date": pd.to_datetime(["2026-01-01", "2026-01-02", "2026-01-03"] * 2),
+            "fold": 0,
+            "y_true": y_true,
+            "persistence": y_true - 10.0,
+            "band_true": [_band(v) for v in y_true],
+        }
+    )
+    # ensemble mean: S1 -> 20, 50 (missed Unhealthy), 70 ; S2 -> 30, 80, 60 (false alarm)
+    mean = np.array([20.0, 50.0, 70.0, 30.0, 80.0, 60.0])
+    for name, shift in (("hist_gb", 4.0), ("mlp_numpy", -4.0)):
+        pred = mean + shift
+        base.assign(y_pred=pred, band_pred=[_band(v) for v in pred]).to_parquet(root / f"{name}_cv_predictions.parquet")
+    base.assign(y_pred=base["band_true"]).drop(columns=["persistence", "band_true"]).to_parquet(
+        root / "random_forest_clf_cv_predictions.parquet"
+    )
+    return root
+
+
+def test_run_from_tuning_ensemble_writes_per_site_band_metrics(tmp_path):
+    tuning = _write_tuning_regressors(tmp_path / "tuning")
+    model_dir = fr.run_from_tuning(tuning, "ensemble", None, tmp_path / "fairness")
+
+    for name in ("per_sensor.csv", "summary.json", "fairness_report.md", "per_sensor_mae.png"):
+        assert (model_dir / name).exists()
+    per_sensor = pd.read_csv(model_dir / "per_sensor.csv").set_index("sensor_id")
+    assert math.isclose(per_sensor.loc["S1", "mae"], 10.0 / 3)  # only the 60 -> 50 day is off
+    assert math.isclose(per_sensor.loc["S1", "miss_rate"], 0.5)  # 2 Unhealthy days, 1 missed
+    assert math.isclose(per_sensor.loc["S2", "false_alarm_rate"], 0.5)  # 2 cleaner days, 1 flagged
+    assert math.isclose(per_sensor.loc["S2", "accuracy"], 2 / 3)
+    summary = json.loads((model_dir / "summary.json").read_text(encoding="utf-8"))
+    assert summary["model"] == "ensemble" and summary["route"] == "regress_then_band"
+
+
+def test_run_from_tuning_single_regressor_file(tmp_path):
+    tuning = _write_tuning_regressors(tmp_path / "tuning")
+    model_dir = fr.run_from_tuning(tuning, "hist_gb", None, tmp_path / "fairness")
+    assert (model_dir / "fairness_report.md").exists()
+
+
+def test_load_tuning_regressor_rejects_classifier_file(tmp_path):
+    tuning = _write_tuning_regressors(tmp_path / "tuning")
+    with pytest.raises(ValueError, match="not a regressor"):
+        fr.load_tuning_regressor(tuning, "random_forest_clf")
+
+
+def test_cli_main_without_predictions_uses_tuning_dir(tmp_path, monkeypatch):
+    tuning = _write_tuning_regressors(tmp_path / "tuning")
+    out_dir = tmp_path / "fairness_cli"
+    argv = ["fairness", "--model", "ensemble", "--tuning-dir", str(tuning), "--out-dir", str(out_dir)]
+    monkeypatch.setattr(sys, "argv", argv)
+    fr.main()
+    assert (out_dir / "ensemble" / "per_sensor.csv").exists()
