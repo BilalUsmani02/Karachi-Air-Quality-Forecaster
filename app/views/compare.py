@@ -22,6 +22,15 @@ from src.ui.compare import (
 )
 
 
+METRIC_COLUMN_NAMES = {
+    "model": "Model",
+    "mae": "Average error, MAE (µg/m³)",
+    "rmse": "RMSE (µg/m³)",
+    "r2": "R²",
+    "skill": "Skill vs persistence",
+}
+
+
 def render() -> None:
     st.title("Model comparison")
     st.caption(f"This app forecasts with: **{PRODUCTION_MODEL_LABEL}**.")
@@ -50,7 +59,11 @@ def _render_metrics_section() -> None:
         st.warning("No final-test results found yet — run `uv run python -m src.evaluate.final_test`.")
         return
 
-    st.dataframe(metrics, hide_index=True, width="stretch")
+    st.dataframe(
+        metrics.rename(columns=METRIC_COLUMN_NAMES),
+        hide_index=True,
+        width="stretch",
+    )
     bars = mae_bar_data(metrics)
     fig = go.Figure(go.Bar(x=bars["model"], y=bars["mae"], marker_color="#1f77b4"))
     fig.update_layout(

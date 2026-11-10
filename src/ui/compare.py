@@ -27,6 +27,7 @@ MODEL_DISPLAY_NAMES: dict[str, str] = {
     "ensemble": "Ensemble — used by the app",
 }
 MODEL_ORDER: tuple[str, ...] = tuple(MODEL_DISPLAY_NAMES)
+CLASSIFIER_DISPLAY_NAMES: dict[str, str] = {"random_forest_clf": "Random Forest classifier"}
 
 PRODUCTION_MODEL_LABEL = "Gradient Boosting + NumPy network (equal-weight average)"
 
@@ -88,7 +89,7 @@ def band_route_table(results_dir: Path = RESULTS_DIR) -> pd.DataFrame | None:
     if df is None:
         return None
     df = df[(df["route"] == "regress_then_band") | (df["model"] == "random_forest_clf")].copy()
-    df["model"] = df["model"].map(lambda m: MODEL_DISPLAY_NAMES.get(m, m))
+    df["model"] = df["model"].map(lambda m: CLASSIFIER_DISPLAY_NAMES.get(m, MODEL_DISPLAY_NAMES.get(m, m)))
     df["route"] = df["route"].map(lambda r: ROUTE_NAMES.get(r, r))
     for rate in ("accuracy", "miss_unhealthy", "false_alarm"):
         df[rate] = (df[rate] * 100).round(1)

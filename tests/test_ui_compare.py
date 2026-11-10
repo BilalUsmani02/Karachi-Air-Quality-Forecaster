@@ -96,6 +96,7 @@ def test_band_route_table_keeps_regress_then_band_plus_the_best_direct_classifie
         "Model", "Route", "Accuracy (%)", "Unhealthy days missed (%)", "False alarms (%)"
     ]
     assert table["Accuracy (%)"].max() == 85.0
+    assert "Random Forest classifier" in set(table["Model"])
     assert len(table) == 3
 
 
