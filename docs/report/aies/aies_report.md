@@ -497,13 +497,13 @@ The Streamlit [13] app (`app/`) has three pages.
 
 **Forecast (home page).** A status banner gives the forecast date, when the data was last updated, and its source (live, cache or demo). A map of the sensor sites, coloured by forecast band, sits beside a dropdown; clicking a dot selects the site. The page then shows the forecast value and its colour-coded band, two profile checkboxes, the advice card with its notes, disclaimer and "You see this because…" trace, the top three SHAP reasons, and a chart of the last 72 hours of readings with the forecast.
 
-![Figure 5. The Forecast page: status banner, site map, forecast band and health alert.](docs/report/figures/app_forecast.png){width=100%}
+![Figure 5. The Forecast page: city-wide alert, the sites without a forecast, and the map of sites coloured by forecast band (live forecast for 10 November 2026).](docs/report/figures/app_forecast.png){width=100%}
 
-![Figure 6. The advice card with the expert system's explanation and SHAP reasons.](docs/report/figures/app_advice.png){width=100%}
+![Figure 6. Forecast and advice for one site with the sensitive-group and outdoor-plans options ticked. The forecast (52 µg/m³) is near the Unhealthy boundary, so the safety-margin rule gives the more cautious Unhealthy advice and says so; a trend note and the disclaimer follow.](docs/report/figures/app_advice.png){width=100%}
 
 **Model comparison.** Final-test error and band-accuracy tables for every model, the NumPy-versus-PyTorch check, the SHAP importance chart and the per-site fairness chart.
 
-![Figure 7. The Model comparison page.](docs/report/figures/app_compare.png){width=100%}
+![Figure 7. The Model comparison page: final-test error for every model, read from the saved results.](docs/report/figures/app_compare.png){width=100%}
 
 **About and data.** Data sources, the model version, the four-step method, the limitations, the privacy note and the disclaimer.
 
