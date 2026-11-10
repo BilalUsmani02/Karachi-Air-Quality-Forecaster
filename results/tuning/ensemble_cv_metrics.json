@@ -1,0 +1,8 @@
+{
+  "mae": 6.162408,
+  "rmse": 9.581265,
+  "r2": 0.89323,
+  "skill": 0.291622,
+  "n_rows": 1458,
+  "how": "src.evaluate.ensemble_cv.load_ensemble_cv + src.evaluate.metrics.regression_metrics (mean of hist_gb and mlp_numpy CV predictions)"
+}

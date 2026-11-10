@@ -138,7 +138,7 @@ uv run streamlit run app/main.py
 | 4b | `tune_mlp` | `results/tuning/mlp_numpy_*` | ~7-8 min |
 | 5a | `final_test` | `results/final_test/{metrics.csv,classification.csv,predictions.parquet,summary.md,run.json}` | ~1-2 min (refits each tuned model once on the development set). **Refuses to rerun** once `results/final_test/run.json` exists — pass `--force` only if something upstream genuinely changed |
 | 5b | `final_test --save-production` | `models/final_ensemble.pkl` | under a minute (refits the frozen ensemble on all rows) |
-| 6 | `src.explain` | `results/explain/{global_importance.csv,shap_summary.png,example_explanations.md}` | ~1-5 min (TreeExplainer is fast; the KernelExplainer cross-check on a 300-row sample is the slow part, ≈4.5 min — `docs/report/explainability.md`) |
+| 6 | `src.explain` | `results/explain/{global_importance.csv,shap_summary.png,example_explanations.md}` | ~1-5 min (TreeExplainer is fast; the permutation explainer on the ensemble over a 300-row sample is the slow part, ≈4.5 min — `docs/report/explainability.md`) |
 | 7 | `src.expert` | stdout only (advice + fired rules) | under a second |
 | 8 | `src.live --refresh` | `data/cache/` snapshot | ~2-3 min (OpenAQ rate limit) |
 | 9 | `streamlit run app/main.py` | — | first load ~5 s; the SHAP reasons section adds ~15 s the first time it runs |

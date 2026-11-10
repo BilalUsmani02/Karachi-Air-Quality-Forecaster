@@ -55,8 +55,8 @@ A ladder from simple to complex, each one beating the last on the CV folds:
 persistence ("forecast = the day before") → Ridge regression (the official
 baseline) → Random Forest / HistGB → the NumPy MLP (hand-written forward
 pass, backprop, Adam, verified by a numerical gradient check) → its PyTorch
-twin (same architecture and initial weights, used for SHAP's
-`DeepExplainer`) → direct band classifiers (logistic regression, Random
+twin (same architecture and initial weights, used to verify the NumPy
+network) → direct band classifiers (logistic regression, Random
 Forest) as the alternative route to the AIES classification task.
 
 ## 6. Tuning + ensemble — `src/evaluate/tune_classical.py`, `tune_mlp.py`
@@ -83,9 +83,9 @@ quoted from EPA/WHO guidance, with an explanation of which rules fired.
 
 ## 9. SHAP reasons — `src/explain/`
 
-`TreeExplainer` on the tree model and `DeepExplainer` on the PyTorch twin
-give per-forecast, plain-English reasons ("low wind speed raised the
-forecast by ~8 µg/m³") and a global feature-importance summary
+A model-agnostic permutation explainer on the production ensemble, plus
+`TreeExplainer` on its Gradient Boosting member for a fast global view, give per-forecast, plain-English reasons ("the forecast day's wind speed was low, which
+raised the forecast by about 8 µg/m³") and a global feature-importance summary
 (`docs/report/explainability.md`).
 
 ## 10. Streamlit app — `app/`

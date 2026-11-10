@@ -404,9 +404,9 @@ Pooled over the 1,458 sensor-days of the eight folds:
 | Gradient Boosting (tuned) | 6.30 | 9.81 | 0.888 | +27.5% |
 | NumPy network (untuned) | 11.21 | 15.42 | 0.723 | −28.9% |
 | NumPy network (tuned) | 6.63 | 10.58 | 0.870 | +23.8% |
-| **Ensemble (GB + NumPy network)** | **6.16** | n/a | n/a | **+29.2%** |
+| **Ensemble (GB + NumPy network)** | **6.16** | **9.58** | **0.893** | **+29.2%** |
 
-RMSE and R² were not saved for the ensemble's pooled CV run, so they are left blank here rather than recomputed.
+The ensemble's row is the average of the Gradient Boosting and NumPy network CV predictions on the same rows, scored with the same metric code (`results/tuning/ensemble_cv_metrics.json`).
 
 Tuning took the network from the worst model to third place, between Random Forest and Gradient Boosting. Its MAE is 0.33 µg/m³ behind Gradient Boosting, 0.09 behind Random Forest, and well ahead of Ridge and persistence.
 
@@ -460,7 +460,7 @@ For a second view, `TreeExplainer`, which computes SHAP exactly for tree models,
 
 ## Global importance
 
-![Mean absolute SHAP value per feature for the production ensemble (300-row sample). The labels say "tomorrow's" for the forecast day.](results/explain/shap_summary.png)
+![Mean absolute SHAP value per feature for the production ensemble (300-row sample).](results/explain/shap_summary.png)
 
 Ranked by mean absolute SHAP value on a fixed 300-row sample (`results/explain/global_importance.csv`):
 

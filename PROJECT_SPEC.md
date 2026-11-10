@@ -391,7 +391,7 @@ predicting the number first beat predicting the category directly?
 "Hazardous" days.
 - Count samples per band on the training split first and report the table.
 - **Decided 8 Nov 2026:** Hazardous (0 days) is merged into Very Unhealthy. Good stays its
-  own class (110 rows in total, 74 before the final test — above the 30 threshold).
+  own class (110 rows in total, 109 before the final test — above the 30 threshold).
 - If a band has fewer than ~30 training samples, **merge it with its neighbour** (e.g.
   Good + Moderate, Very Unhealthy + Hazardous) and state the merge in the report.
 - Then handle what remains with class weights (or resampling on the training split only).
@@ -436,9 +436,9 @@ A small rule base, run by forward chaining (rules fire when their conditions mat
 ## 8. Explainability
 
 - SHAP values for the best tree model (TreeExplainer — fast, exact) *(Core)*.
-- For the network, use **DeepExplainer on the PyTorch twin** — it has the same architecture and
-  weights-matched behaviour as the NumPy version (§6.3), so its explanations stand in for both.
-  KernelExplainer on the NumPy model only on a small sample (≤100 rows), as a cross-check *(stretch)*.
+- ~~For the network, use DeepExplainer on the PyTorch twin~~ — **changed in Phase 6 (10 Nov 2026):**
+  a model-agnostic permutation explainer on the whole production ensemble (Gradient Boosting +
+  NumPy network), so the reasons explain exactly what the app serves (`docs/report/explainability.md`).
 - Per forecast: top factors pushing up/down, in plain words ("Low wind speed raised the forecast by ~8 µg/m³").
 - Global: feature-importance summary plot for the report.
 
@@ -570,7 +570,7 @@ Detailed phase-by-phase tasks and progress tracking: [`ROADMAP.md`](ROADMAP.md).
 6. Tuning + simple average ensemble.
 7. Band classification: regress-then-band vs direct; imbalance handling.
 8. Expert-system rules + explanation.
-9. SHAP (TreeExplainer, then DeepExplainer on PyTorch).
+9. SHAP (TreeExplainer on Gradient Boosting; permutation explainer on the ensemble).
 10. Streamlit app.
 11. Report(s) and presentation.
 12. **Only then** stretch items: GBM, stacking, NumPy softmax classifier, hourly horizons,

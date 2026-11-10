@@ -70,8 +70,8 @@ today_pm25=25.0, sensitive=True, outdoor_activity=True`:
 | Round | Working memory gains | Why |
 |---|---|---|
 | seed | `band=1` (Moderate), `trend="rising"`, `distance_to_next_boundary=2.5` | computed straight from the forecast, same as `band` |
-| 1 | `near_boundary=True`, `advice_band=2` | **R21** matches: `band` is 1 (∈ [1,4]) and `distance_to_next_boundary` (2.5) ≤ 5 |
-| 2 | — (no new facts, but rules now fire) | R06, R07, R18 and R22 can now match, because they condition on `advice_band`/`trend`, which only exist as of round 1 |
+| 1 | `near_boundary=True`, `advice_band=2` | **R21** matches: `band` is 1 (∈ [1,4]) and `distance_to_next_boundary` (2.5) ≤ 5. **R22** (the disclaimer, no conditions) also fires here |
+| 2 | — (no new facts, but rules now fire) | R06, R07 and R18 can now match, because they condition on `advice_band`, which only exists as of round 1 |
 | 3 | nothing new | **fixpoint** — loop stops |
 
 R01–R20 literally cannot match in round 0: their conditions reference `advice_band`, which

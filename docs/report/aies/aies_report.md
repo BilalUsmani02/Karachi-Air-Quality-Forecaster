@@ -7,7 +7,7 @@ date: "November 2026"
 
 # Abstract {-}
 
-Karachi's air often carries fine particulate matter (PM2.5) well above international guidelines, yet residents only see current readings, not what tomorrow will bring. This report describes a hybrid AI and expert system that classifies the next day's air quality into one of five US EPA health bands at each of 14 low-cost sensor sites, and turns that band into explained health advice. A supervised model forecasts the 24-hour average PM2.5 for the day ahead, issued at 00:00 Pakistan time, and the forecast is then sorted into a band. We compared this "regress then band" route with classifiers that predict the band directly, starting from simple baselines (persistence, Ridge regression, logistic regression) and improving through Random Forest, Gradient Boosting, a neural network written in NumPy, tuning and ensembling. On eight rolling-origin cross-validation folds (1,458 sensor-days) the chosen ensemble reaches 82.6% band accuracy and misses 8.0% of Unhealthy-or-worse days, against 18.0% for persistence. A 22-rule forward-chaining expert system, SHAP explanations and a Streamlit app complete the system.
+Karachi's air often carries fine particulate matter (PM2.5) well above international guidelines, yet residents only see current readings, not what the coming day will bring. This report describes a hybrid AI and expert system that classifies the coming day's air quality into one of five US EPA health bands at each of 14 low-cost sensor sites, and turns that band into explained health advice. A supervised model forecasts the 24-hour average PM2.5 for the day ahead, issued at 00:00 Pakistan time, and the forecast is then sorted into a band. We compared this "regress then band" route with classifiers that predict the band directly, starting from simple baselines (persistence, Ridge regression, logistic regression) and improving through Random Forest, Gradient Boosting, a neural network written in NumPy, tuning and ensembling. On eight rolling-origin cross-validation folds (1,458 sensor-days) the chosen ensemble reaches 82.6% band accuracy and misses 8.0% of Unhealthy-or-worse days, against 18.0% for persistence. A 22-rule forward-chaining expert system, SHAP explanations and a Streamlit app complete the system.
 
 # Introduction
 
@@ -54,7 +54,7 @@ The domain is environmental monitoring, applied to public health. The quantity o
 
 ## Users and use case
 
-The main users are Karachi residents, especially people in sensitive groups and those who care for them (parents, teachers, sports coaches). A typical use: just after midnight, a user opens the app, picks the nearest sensor site on a map, and sees "Tomorrow: Unhealthy for Sensitive Groups". They tick "I'm in a sensitive group" and "I have outdoor plans", and the system replies with one piece of EPA advice, a note if the forecast sits close to a worse band, the top three reasons behind the forecast, and a disclaimer.
+The main users are Karachi residents, especially people in sensitive groups and those who care for them (parents, teachers, sports coaches). A typical use: in the morning, a user opens the app, picks the nearest sensor site on a map, and sees that the day (forecast at 00:00) is "Unhealthy for Sensitive Groups". They tick "I'm in a sensitive group" and "I have outdoor plans", and the system replies with one piece of EPA advice, a note if the forecast sits close to a worse band, the top three reasons behind the forecast, and a disclaimer.
 
 ## Inputs and outputs
 
@@ -64,7 +64,7 @@ The main users are Karachi residents, especially people in sensitive groups and 
 
 ## Why this is a classification problem
 
-The decision a resident faces is categorical: is tomorrow fine, or should I change plans? EPA advice is written per band, not per microgram. A forecast of 54 µg/m³ and one of 56 µg/m³ are almost equal as numbers but fall in different bands with different advice. So the measure of success is whether the band is right, and in particular whether truly unhealthy days are caught. The regression step is a means to that end, not the goal. That is also why we compare it against classifiers that skip the number entirely.
+The decision a resident faces is categorical: is the coming day fine, or should I change plans? EPA advice is written per band, not per microgram. A forecast of 54 µg/m³ and one of 56 µg/m³ are almost equal as numbers but fall in different bands with different advice. So the measure of success is whether the band is right, and in particular whether truly unhealthy days are caught. The regression step is a means to that end, not the goal. That is also why we compare it against classifiers that skip the number entirely.
 
 The problem has no obvious solution. The classes are ordered, unevenly sized and drift with the seasons; the data comes from noisy low-cost sensors that drop out for weeks; and the history covers only about 16 months. Choosing a technique therefore needed both analysis (which route, which model, which metric) and domain knowledge (EPA averaging rules, the physics of smog, what a missed bad day costs).
 
@@ -208,7 +208,7 @@ For the regression step we report mean absolute error (MAE), root mean squared e
 
 ## Baselines
 
-- **Persistence:** tomorrow's average equals today's average. It needs no learning and is surprisingly hard to beat for air quality, since smog does not clear overnight.
+- **Persistence:** the day's average equals the previous day's average. It needs no learning and is surprisingly hard to beat for air quality, since smog does not clear overnight.
 - **Ridge regression → band:** a linear model with an L2 penalty; the official regression baseline.
 - **Logistic regression (direct):** a multinomial linear classifier with balanced class weights; the official classification baseline.
 
@@ -449,7 +449,7 @@ The ensemble's MAE is 17% lower than the Ridge baseline's on the final test (4.6
 
 # Explainability
 
-A forecast that says "Unhealthy tomorrow" with no reason is hard to trust. We explain every forecast with **SHAP** (SHapley Additive exPlanations) [11]. SHAP splits one prediction into a starting point, the *base value* (the average forecast), plus one contribution per feature. The contributions add up exactly to the forecast. A positive contribution pushed the forecast up; a negative one pulled it down.
+A forecast that says "Unhealthy today" with no reason is hard to trust. We explain every forecast with **SHAP** (SHapley Additive exPlanations) [11]. SHAP splits one prediction into a starting point, the *base value* (the average forecast), plus one contribution per feature. The contributions add up exactly to the forecast. A positive contribution pushed the forecast up; a negative one pulled it down.
 
 The production model is an average of a tree model and a neural network, so no single model-specific explainer can open it. We therefore used SHAP's model-agnostic *permutation* explainer on the ensemble's own predict function, with 100 training rows as background. One forecast takes about 0.6–0.8 seconds, fast enough for the app.
 
@@ -563,7 +563,7 @@ Every advice panel carries the disclaimer: the advice is general public-health g
 
 # Conclusion and future work
 
-We built a hybrid AI and expert system that classifies tomorrow's air-quality band at Karachi's sensor sites and turns it into explained, sourced health advice. On 1,458 cross-validation sensor-days, an equal-weight ensemble of Gradient Boosting and a NumPy neural network, followed by EPA banding, reached 82.6% accuracy and missed 8.0% of Unhealthy-or-worse days. That is clearly better than persistence (18.0% missed) and the logistic-regression baseline (23.9% missed). Its macro-F1 ties with persistence, which we report rather than hide, and it under-calls the rarest bands. On the one-time final test, the ranking held in direction (84.6% accuracy, 14.8% missed) but with wide intervals.
+We built a hybrid AI and expert system that classifies the coming day's air-quality band (issued at 00:00 PKT) at Karachi's sensor sites and turns it into explained, sourced health advice. On 1,458 cross-validation sensor-days, an equal-weight ensemble of Gradient Boosting and a NumPy neural network, followed by EPA banding, reached 82.6% accuracy and missed 8.0% of Unhealthy-or-worse days. That is clearly better than persistence (18.0% missed) and the logistic-regression baseline (23.9% missed). Its macro-F1 ties with persistence, which we report rather than hide, and it under-calls the rarest bands. On the one-time final test, the ranking held in direction (84.6% accuracy, 14.8% missed) but with wide intervals.
 
 Three choices did the most work. Evaluating on rolling folds instead of a single monsoon block made band tuning possible at all. Writing the selection rule down, with missed bad days first, stopped a naive model from winning on the wrong metric. And moving the safety margin from the band into the expert system kept "Good" forecasts while still erring towards caution in the advice.
 

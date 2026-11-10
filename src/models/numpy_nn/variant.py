@@ -1,6 +1,6 @@
 """`MLPVariant`: the NumPy network plus a dropped-feature set and a residual-from-persistence target.
 
-Found in Phase 5 tuning (`docs/report/mlp_tuning.md`):
+Found in Phase 5 tuning (`docs/report/model_selection.md`, `results/tuning/mlp_numpy_diagnosis.csv`):
 
 - **feature_set** — `"no_calendar"` drops `doy_sin`, `doy_cos` and `month`. The feature table
   starts in June 2025, so early folds never see a March–May day of year; the network maps those
