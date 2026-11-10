@@ -306,10 +306,10 @@ monsoon validation block had zero Unhealthy days (spec §5.3).
 **Effort:** ~1 week · **Spec:** §3, §4, §12
 
 - [x] Pipeline / methodology diagram (`docs/report/figures/pipeline.png`)
-- [ ] **AIES report** (≥10 pages) — lead with classification, expert system, baseline → improvement
-- [ ] **PAI report** — lead with the NumPy network and comparison (format per PAI brief)
-- [ ] Each report written fresh from shared results — no copied paragraphs
-- [ ] Traceability table (spec §3): every row points to real code / section
+- [x] **AIES report** (≥10 pages; ~21 pages, `docs/report/aies/aies_report.docx`) — lead with classification, expert system, baseline → improvement
+- [x] **PAI report** (`docs/report/pai/pai_report.docx`) — lead with the NumPy network and comparison (format per PAI brief)
+- [x] Each report written fresh from shared results — no copied paragraphs (checked by script)
+- [x] Traceability table (spec §3): every row points to real code / section (report appendices)
 - [x] Coverage ≥80% on `src/` (98%; `fail_under = 80` enforced)
 - [ ] Viva prep for every member: inputs/outputs, why each model over alternatives, real-life use
 - [ ] Fill group members + ownership in spec §11.1
