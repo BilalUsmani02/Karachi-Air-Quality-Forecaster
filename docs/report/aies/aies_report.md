@@ -30,7 +30,7 @@ Karachi's air often carries fine particulate matter (PM2.5) well above internati
 ## Contributions
 
 - A cleaned, leak-free daily dataset of 4,027 labelled sensor-days from 14 Karachi sensors, joined with weather and atmospheric-model data.
-- A side-by-side comparison of nine routes to the band, from persistence to a two-model ensemble, with date-block bootstrap confidence intervals on every difference.
+- A side-by-side comparison of nine routes to the band, from persistence to a two-model ensemble, with date-block bootstrap confidence intervals on the chosen ensemble's difference from each main competitor.
 - An explicit, written model-selection rule that ranks routes by missed unhealthy days before accuracy.
 - A 22-rule forward-chaining expert system with conflict resolution, a safety margin and a plain-English explanation facility.
 - A Streamlit app with live, cached and demo modes, SHAP reasons and health alerts.
@@ -66,7 +66,7 @@ The main users are Karachi residents, especially people in sensitive groups and 
 
 The decision a resident faces is categorical: is the coming day fine, or should I change plans? EPA advice is written per band, not per microgram. A forecast of 54 µg/m³ and one of 56 µg/m³ are almost equal as numbers but fall in different bands with different advice. So the measure of success is whether the band is right, and in particular whether truly unhealthy days are caught. The regression step is a means to that end, not the goal. That is also why we compare it against classifiers that skip the number entirely.
 
-The problem has no obvious solution. The classes are ordered, unevenly sized and drift with the seasons; the data comes from noisy low-cost sensors that drop out for weeks; and the history covers only about 16 months. Choosing a technique therefore needed both analysis (which route, which model, which metric) and domain knowledge (EPA averaging rules, the physics of smog, what a missed bad day costs).
+The problem has no obvious solution. The classes are ordered, unevenly sized and drift with the seasons; the data comes from noisy low-cost sensors that drop out for weeks; and the history covers only about 16½ months. Choosing a technique therefore needed both analysis (which route, which model, which metric) and domain knowledge (EPA averaging rules, the physics of smog, what a missed bad day costs).
 
 # Data and knowledge sources
 
@@ -88,7 +88,7 @@ Weather and CAMS data start a month before the first sensor reading so that lag 
 
 ## Sensors
 
-Fourteen Urban Unit sensors within Karachi had at least 150 complete days and were kept; four others with too little data were dropped. About nine report at any one time. Completeness ranges from 85.6% of expected hours (S1, Climate Action Center) to 32.5% (S14, Aga Khan University IED). The longest single gap is 5,533 hours, or about 230 days, at S13. The sensors agree closely with each other: the daily-mean correlation between any two sites ranges from 0.911 to 0.992 (mean 0.959). This tells us that much of the day-to-day signal is city-wide, which matters when a site goes offline.
+Fourteen Urban Unit sensors within Karachi had at least 150 complete days and were kept; four others with too little data were dropped. Typically seven to nine report on a given day (eight on average). Completeness ranges from 85.6% of expected hours (S1, Climate Action Center) to 32.5% (S14, Aga Khan University IED). The longest single gap is 5,533 hours, or about 230 days, at S13. The sensors agree closely with each other: the daily-mean correlation between any two sites ranges from 0.911 to 0.992 (mean 0.959). This tells us that much of the day-to-day signal is city-wide, which matters when a site goes offline.
 
 ## Diverse data types
 
@@ -192,7 +192,7 @@ Air quality is a time series, so a random train/test split would leak the future
 
 We first planned a single validation block for June–August 2026. It turned out to contain **zero** Unhealthy or Very Unhealthy days, so it could not tune a band classifier at all. The rolling folds cover winter smog, the spring transition and the monsoon, so every band appears in the pooled test rows.
 
-**Confidence intervals.** Every headline number carries a 95% bootstrap interval from 2,000 resamples (seed 42). We resample whole *dates*, not single rows, because all sensors on one day share the same weather and smoke and are not independent. Two models are compared on the same resampled dates (a paired difference). If the interval of a difference contains zero, we treat the gap as noise.
+**Confidence intervals.** Every headline number carries a 95% bootstrap interval from 2,000 resamples (seed 42). The unit we resample is the *date*, not the row: every sensor on a given day sees the same weather and smoke, so rows from one day are not independent. To compare two models we draw the same dates for both and record the gap each time (a *paired* difference). A difference whose interval includes zero is treated as noise.
 
 ## Metrics
 
@@ -235,7 +235,7 @@ Each family was tuned on the pooled CV folds with a staged search: a coarse scan
 
 : Table 5. Tuning results, pooled CV (1,458 sensor-days), MAE in µg/m³.
 
-The untuned network was worse than persistence. Two causes stood out. First, the data starts in June 2025, so the spring folds tested calendar dates the network had never seen; it read them as winter and over-forecast by 21.9 µg/m³ on average in one fold. Dropping the three calendar features cut that bias to −2.5. Second, it overfitted (training error near 3 µg/m³, held-out error 15–17). A smaller network with a heavier weight penalty, trained to predict the *change* from a simple previous-day line, fixed most of this. The result was stable across random seeds (MAE 6.57, 6.63 and 6.70).
+The untuned network was worse than persistence. Two causes stood out. First, the data starts in June 2025, so the spring folds tested calendar dates the network had never seen; it read them as winter and over-forecast by 21.9 µg/m³ on average in one fold. Dropping the three calendar features cut that bias to −2.5. Second, it overfitted: on the first five folds its training error was about 3–6 µg/m³ while its held-out error was 15–18. A smaller network with a heavier weight penalty, trained to predict the *change* from a simple previous-day line, fixed most of this. The result was stable across random seeds (MAE 6.57, 6.63 and 6.70).
 
 ## Ensemble
 
@@ -245,7 +245,7 @@ The regressors make partly different mistakes (their predictions correlate at 0.
 
 We wrote the rule down before comparing band routes, in priority order:
 
-0. **Eligibility.** A regress-then-band route qualifies only if its regressor's CV MAE is within about 10% of the best (6.16, so up to about 6.8). A model that is clearly worse at the number should not win by leaning towards the worse band. Eligible: the ensemble (6.16), Gradient Boosting (6.30), Random Forest (6.54) and the NumPy network (6.63). Ridge (7.22) and persistence (8.70) stay as baselines. Direct classifiers have no MAE and go straight to rule 1.
+0. **Eligibility.** A regress-then-band route is considered only when its regressor's CV MAE is no more than about 10% above the best value (6.16, a ceiling near 6.8). A route that forecasts the number clearly worse should not be able to win just because it tilts towards the worse band. This admits the ensemble (6.16), Gradient Boosting (6.30), Random Forest (6.54) and the NumPy network (6.63); Ridge (7.22) and persistence (8.70) remain as baselines only. Direct classifiers produce no MAE, so they enter at rule 1.
 1. **Fewest missed Unhealthy-or-worse days.** A missed bad day costs more than a false alarm: people who should have stayed indoors do not. A route is ruled out only if it misses *clearly* more, meaning the bootstrap interval of the difference excludes zero.
 2. **Then accuracy.**
 3. **Then macro-F1.**
@@ -265,13 +265,13 @@ The knowledge came from published documents, not from our own opinions:
 - The **WHO 2021 guidelines** [3] give stricter health-based limits (5 µg/m³ annual, 15 µg/m³ for 24 hours). WHO has no per-band advice, so it informs the limitations, not the rules.
 - **Pakistan's National Environmental Quality Standards** [4] set 35 µg/m³ as the 24-hour PM2.5 limit. We cite it for context; the source document is headed as a draft and we could not confirm its approval date.
 
-Two safeguards shaped the acquisition. Advice is **quoted, not invented**: every advice rule carries a `source` field. And the profile asks only about **broad groups** ("sensitive group: yes/no"), never a named condition. EPA's guide has an extra line for people with asthma; we left it out on purpose because it would require asking about a diagnosis.
+Two safeguards shaped the acquisition. Advice is **quoted or closely paraphrased from EPA guidance, not invented**: every advice rule carries a `source` field. And the profile asks only about **broad groups** ("sensitive group: yes/no"), never a named condition. EPA's guide has an extra line for people with asthma; we left it out on purpose because it would require asking about a diagnosis.
 
 ## Knowledge representation
 
 Each rule is a frozen data record, not a function: an ID, a list of conditions, a kind, the advice text, a severity from 1 to 5, a source and a "because" sentence. Each condition is a plain `(fact, operator, value)` triple. Keeping rules as data rather than code is what lets the explanation facility print exactly what was checked.
 
-The 22 rules fall into four groups. R01–R17 are candidates for the single main piece of advice, one for each combination of band, sensitive status and outdoor plans. R18–R20 add notes when the trend is rising or falling. R21 is a meta-rule that applies the safety margin. R22 attaches the disclaimer to every answer. Table 6 shows a representative selection.
+The 22 rules fall into four groups. R01–R17 are candidates for the single main piece of advice, covering every combination of band, sensitive status and outdoor plans. R18–R20 add notes when the trend is rising or falling. R21 is a meta-rule that applies the safety margin. R22 attaches the disclaimer to every answer. Table 6 shows a representative selection.
 
 | ID | IF | THEN | Severity | Source |
 |---|---|---|---|---|
@@ -319,7 +319,7 @@ A test runs every one of the 24 band × sensitive × outdoor combinations (inclu
 
 ## Safety margin
 
-During model selection we tried adding 5 µg/m³ to every forecast before banding. It cut missed Unhealthy days to 4.1%, but raised false alarms to 9.1% and meant "Good" was never forecast. So the margin is **not** applied to the band shown. It lives in the advice layer instead, as R21: when the forecast is within 5 µg/m³ below the next band's boundary, the *advice* follows the worse band and the app says so. Good never bumps into Moderate, so "a great day to be active outside" can still appear. For example, 122.0 µg/m³ (Unhealthy, 3.5 below Very Unhealthy) triggers the margin, while 120.0 (5.4 below) does not.
+During model selection we tried adding 5 µg/m³ to every forecast before banding. It cut missed Unhealthy days to 4.1%, but raised false alarms to 9.1% and meant "Good" was never forecast. So the margin is **not** applied to the band shown. It lives in the advice layer instead, as R21: when the forecast is within 5 µg/m³ below the next band's boundary, the *advice* follows the worse band and the app says so. Good never bumps into Moderate, so "a great day to be active outside" can still appear. For example, 122.0 µg/m³ (Unhealthy, 3.5 below Very Unhealthy) triggers the margin, while 120.0 (5.5 below) does not.
 
 ## Explanation facility
 
@@ -327,12 +327,11 @@ For every answer the engine can print a "You see this because…" trace: the inp
 
 ```
 Winning advice rule: R07 (usg_sensitive_outdoor).
-  Why it won: R07 beat R06: 3 matching conditions vs 2 - the most-specific rule wins.
-  Advice shown: "Make your planned activity shorter and less intense, take more
-  breaks, and watch for symptoms such as coughing or shortness of breath."
+  Why it won: R07 beat R06: 3 matching conditions vs 2 — the most-specific rule wins.
+  Advice shown: "Make your planned activity shorter and less intense, take more breaks, and watch for symptoms such as coughing or shortness of breath."
 Additional notes:
-  - Near a boundary - showing the more cautious advice for Unhealthy for Sensitive Groups.
-  - Conditions are forecast to worsen compared with the day before - plan ahead.
+  - Near a boundary — showing the more cautious advice for Unhealthy for Sensitive Groups.
+  - Conditions are forecast to worsen compared with the day before — plan ahead.
 ```
 
 The app shows the same trace in an expandable panel under the advice card.
@@ -371,7 +370,7 @@ Table 9 gives the bootstrap intervals for the chosen ensemble and its difference
 | Ensemble | 0.826 [0.798, 0.855] | 0.674 [0.613, 0.747] | 0.080 [0.043, 0.127] | 0.056 [0.032, 0.084] |
 | Ensemble − persistence | **+0.038 [+0.008, +0.069]** | −0.004 [−0.064, +0.083] | **−0.100 [−0.174, −0.035]** | +0.003 [−0.016, +0.022] |
 | Ensemble − logistic regression | **+0.095 [+0.065, +0.127]** | **+0.085 [+0.017, +0.183]** | **−0.159 [−0.253, −0.076]** | +0.016 [−0.004, +0.038] |
-| Ensemble − Ridge → band | **+0.031 [+0.014, +0.049]** | **+0.091 [+0.034, +0.161]** | +0.024 [+0.003, +0.050] | **−0.030 [−0.052, −0.013]** |
+| Ensemble − Ridge → band | **+0.031 [+0.014, +0.049]** | **+0.091 [+0.034, +0.161]** | **+0.024 [+0.003, +0.050]** | **−0.030 [−0.052, −0.013]** |
 | Ensemble − GB classifier | +0.007 [−0.012, +0.026] | +0.009 [−0.059, +0.056] | −0.021 [−0.054, +0.008] | −0.006 [−0.027, +0.010] |
 | Ensemble − RF → band | **+0.031 [+0.012, +0.050]** | **+0.065 [+0.031, +0.102]** | +0.018 [−0.013, +0.050] | −0.018 [−0.043, +0.005] |
 | Ensemble − GB → band | **+0.019 [+0.006, +0.034]** | +0.029 [−0.022, +0.061] | +0.009 [−0.013, +0.030] | −0.010 [−0.026, +0.009] |
@@ -379,9 +378,9 @@ Table 9 gives the bootstrap intervals for the chosen ensemble and its difference
 
 : Table 9. Ensemble and paired differences with 95% date-block bootstrap intervals, pooled CV. Bold differences exclude zero.
 
-**Applying the selection rule.** Among eligible regress-then-band routes and the direct classifiers, rule 1 rules out persistence, logistic regression and the NumPy network alone, because each misses clearly more bad days than the ensemble does (Table 9; the network by 5.0 points). The Random Forest classifier misses nearly twice as many bad days as the ensemble (15.0% against 8.0%) and is also less accurate, so it loses on either rule. Random Forest → band and Gradient Boosting → band miss slightly fewer bad days than the ensemble, but those gaps sit within noise, so rule 1 cannot separate them. On rule 2 the ensemble is clearly more accurate than both. The Gradient Boosting classifier is within noise of the ensemble on every measure; the ensemble wins on rule 2 by a small margin (82.6% against 82.0%). So the production route is the ensemble, then the band.
+**Applying the selection rule.** Among eligible regress-then-band routes and the direct classifiers, rule 1 rules out persistence, logistic regression and the NumPy network alone, because each misses clearly more bad days than the ensemble does (Table 9; the network by 5.0 points). The Random Forest classifier misses nearly twice as many bad days as the ensemble (15.0% against 8.0%) and is also less accurate, so it loses on either rule (no paired interval was computed for this pair). Random Forest → band and Gradient Boosting → band miss slightly fewer bad days than the ensemble, but those gaps sit within noise, so rule 1 cannot separate them. On rule 2 the ensemble is clearly more accurate than both. The Gradient Boosting classifier is within noise of the ensemble on every measure; the ensemble wins on rule 2 by a small margin (82.6% against 82.0%). So the production route is the ensemble, then the band.
 
-**Baseline to improvement.** Against the official classification baseline (logistic regression), the ensemble is clearly better on every health measure: 9.5 points more accurate, 0.085 higher macro-F1, and it misses 15.9 points fewer bad days. Against the official regression baseline (Ridge → band), it is more accurate, has a 0.091 higher macro-F1 and 3.0 points fewer false alarms. Ridge does miss fewer bad days (5.6% against 8.0%), but it gets there by calling "Unhealthy" too often: it never forecasts Very Unhealthy and flags 8.7% of cleaner days. It also fails rule 0, with an MAE 17% worse.
+**Baseline to improvement.** Against the official classification baseline (logistic regression), the ensemble is clearly better on every health measure: 9.5 points more accurate, 0.085 higher macro-F1, and it misses 15.9 points fewer bad days. Against the official regression baseline (Ridge → band), it is more accurate, has a 0.091 higher macro-F1 and 3.0 points fewer false alarms. Ridge does miss fewer bad days (5.6% against 8.0%), but it gets there by calling "Unhealthy" too often: it never forecasts Very Unhealthy and flags 8.7% of cleaner days. It also fails rule 0, with an MAE 17% worse. Rule 0 is what removes Ridge, and Ridge is the only route that misses clearly fewer bad days than the ensemble (+0.024 [+0.003, +0.050]). We think that exclusion is justified: Ridge buys its lower miss rate with a 17% worse MAE, more false alarms and no Very Unhealthy forecasts at all, so it is a cruder forecaster leaning towards the worse band rather than a better one.
 
 **An honest note on macro-F1.** The ensemble does **not** beat persistence on macro-F1. The difference is −0.004, with an interval from −0.064 to +0.083: a tie. Persistence scores well on macro-F1 because it copies yesterday, so it reaches the rare extreme bands about as often as they happen. Its Very Unhealthy recall is 40% against the ensemble's 16%. The ensemble's gains are in accuracy (+3.8 points) and, most importantly, in safety: it misses 10 points fewer Unhealthy-or-worse days, at no measurable cost in false alarms. Had we picked the winner by macro-F1 alone, persistence (a model that learns nothing) would have won. This is why the selection rule puts missed bad days first.
 
@@ -389,7 +388,7 @@ Table 9 gives the bootstrap intervals for the chosen ensemble and its difference
 
 ## Confusion matrices
 
-![Figure 2. Pooled CV confusion matrices (1,458 sensor-days). Rows are the true band, columns the forecast band; each cell shows the count and the share of that true band.](results/bands/confusion_cv.png){width=100%}
+![Figure 2. Confusion matrices on the pooled CV rows (1,458 sensor-days). Each row is a true band and each column a forecast band; a cell gives the number of sensor-days and their percentage of the row.](results/bands/confusion_cv.png){width=100%}
 
 Figure 2 shows where the errors fall. Almost all of the ensemble's errors are one band away; it never confuses Good with Unhealthy. When it misses an Unhealthy day, it nearly always calls it USG, one band lower. Most Very Unhealthy days are called Unhealthy. This is the expected effect of averaging: the average of two models is pulled towards the middle, so extremes are under-called.
 
@@ -416,15 +415,16 @@ The final test covers 1 September to 8 November 2026 and was scored once. This p
 | Persistence → band | 81.7% | 0.477 | 0.596 | 22.7% | 4.5% |
 | Ridge → band (baseline) | 81.9% | 0.473 | 0.591 | **14.8%** | 5.6% |
 | Random Forest classifier (direct) | **84.6%** | **0.550** | **0.688** | 20.5% | **2.0%** |
+| Random Forest → band | 84.4% | 0.492 | 0.615 | 15.9% | 3.7% |
 | Gradient Boosting → band | 83.5% | 0.488 | 0.610 | 18.2% | 4.2% |
 | NumPy network → band | 83.0% | 0.485 | 0.606 | 15.9% | 4.0% |
 | **Ensemble → band** | **84.6%** | 0.495 | 0.618 | **14.8%** | 4.0% |
 
 : Table 11. Band results on the final test (442 sensor-days, 69 dates).
 
-The ensemble's accuracy is 0.846 [0.786, 0.898], and against persistence it gains +0.029 [−0.005, +0.065] in accuracy and misses −0.080 [−0.182, +0.014] fewer bad days (13 of 88 against persistence's 20). So the CV ranking holds in direction: the ensemble again misses the fewest bad days (tied with Ridge) and ties for best accuracy. But the test is short, and none of these gaps is outside the noise on its own.
+The ensemble's accuracy is 0.846 [0.786, 0.898], and against persistence it gains +0.029 [−0.005, +0.065] in accuracy and misses 8.0 points fewer bad days (−0.080 [−0.182, +0.014]; 13 of 88 against persistence's 20). So the CV ranking holds in direction: the ensemble again misses the fewest bad days (tied with Ridge) and ties for best accuracy. But the test is short, and none of these gaps is outside the noise on its own.
 
-The Random Forest classifier, the only direct classifier run on the final test, has the best macro-F1 and the fewest false alarms. Its advantage comes mainly from the USG band (recall 83.6% against the ensemble's 64.8%) and from catching the single Good day. It also misses more bad days (20.5%). Its macro-F1 gain over the ensemble is not significant (ensemble − RF classifier: −0.069 [−0.176, +0.013]). Logistic regression and the Gradient Boosting classifier were not run on the final test, because they were not in the frozen plan and a second run would break the "scored once" rule.
+The Random Forest classifier, the only direct classifier run on the final test, has the best macro-F1 and the fewest false alarms. Its advantage comes mainly from the USG band (recall 83.6% against the ensemble's 64.8%) and from catching the single Good day. It also misses more bad days (20.5%). Its macro-F1 gain over the ensemble is not significant (ensemble − RF classifier, macro-F1 over the 4 present bands: −0.069 [−0.176, +0.013]). Logistic regression and the Gradient Boosting classifier were not run on the final test, because they were not in the frozen plan and a second run would break the "scored once" rule.
 
 ![Figure 3. Final-test confusion matrices (442 sensor-days). The Very Unhealthy row is empty because no such day occurred.](results/bands/confusion_final_test.png){width=100%}
 
@@ -451,11 +451,11 @@ The ensemble's MAE is 17% lower than the Ridge baseline's on the final test (4.6
 
 A forecast that says "Unhealthy today" with no reason is hard to trust. We explain every forecast with **SHAP** (SHapley Additive exPlanations) [11]. SHAP splits one prediction into a starting point, the *base value* (the average forecast), plus one contribution per feature. The contributions add up exactly to the forecast. A positive contribution pushed the forecast up; a negative one pulled it down.
 
-The production model is an average of a tree model and a neural network, so no single model-specific explainer can open it. We therefore used SHAP's model-agnostic *permutation* explainer on the ensemble's own predict function, with 100 training rows as background. One forecast takes about 0.6–0.8 seconds, fast enough for the app.
+The production model is an average of a tree model and a neural network, so no single model-specific explainer can open it. We therefore used SHAP's model-agnostic *permutation* explainer on the ensemble's own predict function, with 100 training rows as background. One explanation took 0.80 seconds in our timing run, fast enough for the app.
 
 ## Global importance
 
-![Figure 4. SHAP summary for the production ensemble over a 300-row sample. Each dot is one sensor-day; position shows how much that feature moved the forecast.](results/explain/shap_summary.png){width=90%}
+![Figure 4. Mean absolute SHAP value per feature (top 15) for the production ensemble, over a 300-row sample.](results/explain/shap_summary.png){width=90%}
 
 | Rank | Feature | Mean \|SHAP\| (µg/m³) | Meaning |
 |---|---|---|---|
@@ -470,7 +470,7 @@ The production model is an average of a tree model and a neural network, so no s
 
 : Table 13. Top global factors, ensemble explainer (`results/explain/global_importance.csv`).
 
-**Agreement with domain knowledge.** Two patterns stand out, and both match atmospheric science. First, persistence dominates: recent PM2.5 outweighs all the weather features combined, which is also why persistence is such a hard baseline. Second, weather works at the margin. Wind, the CAMS forecast and the mixing height (mean |SHAP| 1.1 µg/m³) are what move a forecast away from "same as yesterday". Calm wind and a low mixing height trap pollution near the ground; rain washes it out. As a cross-check we also ran the exact tree explainer on the Gradient Boosting member alone over all 4,027 rows. It agreed on the top two features (in swapped order) and on the two CAMS features just below them.
+**Agreement with domain knowledge.** Two patterns stand out, and both match atmospheric science. First, persistence dominates: recent PM2.5 outweighs all the weather features combined, which is also why persistence is such a hard baseline. Second, weather works at the margin. Wind, the CAMS forecast and the mixing height (mean |SHAP| 1.1 µg/m³) are what move a forecast away from "same as yesterday". Calm wind and a low mixing height trap pollution near the ground; rain washes it out. As a cross-check we also ran the exact tree explainer on the Gradient Boosting member alone over all 4,027 rows. It agreed on the top two features (in swapped order) and placed both CAMS features in its top six.
 
 ## A per-forecast example
 
@@ -480,7 +480,7 @@ For sensor S11 (Orangi Pilot Project) on 20 December 2025, a winter smog day, th
 |---|---|
 | Yesterday's average PM2.5 was high (137.3) | +37.5 |
 | The reading an hour before midnight was high (195.0) | +19.1 |
-| The forecast day's CAMS PM2.5 was high (59.3) | +13.3 |
+| The forecast day's CAMS PM2.5 was high (59.3) | +13.4 |
 | The forecast day's CAMS NO₂ was high (55.0) | +11.7 |
 | The last three days averaged 120.7 | +6.9 |
 | Yesterday's PM2.5 swung a lot (std 63.9) | −6.6 |
@@ -497,7 +497,7 @@ The Streamlit [13] app (`app/`) has three pages.
 
 **Forecast (home page).** A status banner gives the forecast date, when the data was last updated, and its source (live, cache or demo). A map of the sensor sites, coloured by forecast band, sits beside a dropdown; clicking a dot selects the site. The page then shows the forecast value and its colour-coded band, two profile checkboxes, the advice card with its notes, disclaimer and "You see this because…" trace, the top three SHAP reasons, and a chart of the last 72 hours of readings with the forecast.
 
-![Figure 5. The Forecast page: city-wide alert, the sites without a forecast, and the map of sites coloured by forecast band (live forecast for 10 November 2026).](docs/report/figures/app_forecast.png){width=100%}
+![Figure 5. The Forecast page: city-wide alert, sites without a forecast, and the site map coloured by forecast band.](docs/report/figures/app_forecast.png){width=100%}
 
 ![Figure 6. Forecast and advice for one site with the sensitive-group and outdoor-plans options ticked. The forecast (52 µg/m³) is near the Unhealthy boundary, so the safety-margin rule gives the more cautious Unhealthy advice and says so; a trend note and the disclaimer follow.](docs/report/figures/app_advice.png){width=100%}
 
@@ -509,7 +509,7 @@ The Streamlit [13] app (`app/`) has three pages.
 
 ## Health alerts
 
-When the selected site's band is USG, the page shows an orange warning; for Unhealthy or worse, a red one. A city-wide line counts how many sites are forecast USG or worse, for example "3 of 9 sites are forecast Unhealthy for Sensitive Groups or worse." Every alert ends with "Informational only — not an official alert." The project is not an official warning service, and the wording says so.
+When the selected site's band is USG, the page shows an orange warning; for Unhealthy or worse, a red one. A city-wide line counts how many sites are forecast USG or worse, for example "3 of 9 sites are forecast Unhealthy for Sensitive Groups or worse." Every site alert ends with "Informational only — not an official alert." The project is not an official warning service, and the wording says so.
 
 ## Network availability
 
@@ -536,7 +536,7 @@ A forecast that is good in rich neighbourhoods and poor elsewhere would be unfai
 - **Error is uneven.** MAE ranges from 4.6 µg/m³ at the Climate Action Center (S1) to 15.6 at DG House DHA Phase 5 (S10), against 6.2 overall. Six sites are more than 25% above average, including Orangi Pilot Project (S11, 13.4) and NED University (S7, 9.9).
 - **Why.** Error tracks each site's pollution level (rank correlation 0.77 with mean PM2.5) more than its data gaps (−0.39). Dirtier sites have bigger numbers to miss by. The worst sites also have the fewest CV rows (14–66), so their estimates are themselves uncertain. Even after dividing by each site's mean PM2.5, S10 remains the relatively worst (normalised MAE 0.29).
 - **Missed bad days are spread more evenly.** The highest miss rate is at Aga Khan University (S4), 5 of its 25 Unhealthy-or-worse days (20%). Elsewhere it is 0–15%.
-- **False alarms cluster at sparse, polluted sites:** 36% at S10, 23% at S7 and 17% at S9, against 2–7% at well-covered sites.
+- **False alarms cluster at sparse, polluted sites:** 36% at S10, 23% at S7, 17% at S9 and 25% at the Urban Unit office (S13), against 2–7% at well-covered sites. Orangi (S11, 1 of 1) and Karachi Zoo (S12, 4 of 8) show higher rates, but on very few cleaner days.
 
 In practice, at the sparse, high-pollution sites the forecast leans towards calling a day bad, which is the safer direction for health. Their forecasts still deserve more caution, and the app notes this.
 
@@ -551,12 +551,12 @@ Every advice panel carries the disclaimer: the advice is general public-health g
 # Challenges and limitations
 
 - **Perfect prognosis.** All results use recorded weather for the forecast day. Live forecasts use predicted weather, so live accuracy will be somewhat lower. We could not measure how much lower, because past weather forecasts for Karachi were not part of our data.
-- **Short history.** We have about 16 months of sensor data (June 2025 to November 2026) and one winter. The untuned network's failure on unseen calendar dates (Section 5.6) shows how little seasonal coverage there is. A second winter would help every model.
+- **Short history.** We have about 16½ months of sensor data (20 June 2025 to 8 November 2026) and one winter. The untuned network's failure on unseen calendar dates (Section 5.6) shows how little seasonal coverage there is. A second winter would help every model.
 - **A one-season final test.** The final test covers September to early November only. It has one Good day and no Very Unhealthy days, so it cannot test the extremes, and its intervals are wide (69 dates).
 - **Extreme bands.** The ensemble catches only 16% of Very Unhealthy days and 57% of Good days on CV. Averaging pulls forecasts to the middle. The safety margin softens this for advice, but the displayed band still under-calls extremes.
 - **Macro-F1 tie with persistence.** On the textbook imbalance metric, our system is no better than copying yesterday. We chose a health-first rule instead, and we state that choice openly.
 - **Sensor noise and gaps.** These are low-cost sensors, not reference instruments. Of 7,276 candidate sensor-days, 3,149 (43%) had too few valid hours to form a target. One site was offline for about 230 days in a single gap.
-- **Sensors offline in live use.** About nine of the 14 sensors report at a time. A site with no recent data gets no forecast.
+- **Sensors offline in live use.** Typically seven to nine of the 14 sensors report on a given day. A site with no recent data gets no forecast.
 - **API limits.** OpenAQ rate-limits requests, so a live refresh takes 2–3 minutes. The cache and demo modes exist partly for this reason.
 - **No reference overlap.** The US Consulate monitor stopped in March 2025, before our sensors started, so we could not calibrate the low-cost sensors against it directly.
 - **Rule thresholds are not tuned.** The 5 µg/m³ margin and the trend threshold are design choices, not the result of a study of user outcomes.
