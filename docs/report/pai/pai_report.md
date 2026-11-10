@@ -5,9 +5,9 @@ author: "Group members: [to be added]"
 date: "November 2026"
 ---
 
-# Abstract
+# Abstract {-}
 
-Karachi often breathes air with fine-particle (PM2.5) levels well above health guidelines, but residents can only see what the air is like now, not what it will be like later today. This project forecasts the 24-hour average PM2.5 for the coming day at each of 14 low-cost sensor sites run by The Urban Unit, with the forecast issued at 00:00 Pakistan time (PKT). The inputs are the sensors' own recent history, recorded weather (ERA5 via Open-Meteo) and modelled air quality (CAMS via Open-Meteo).
+Karachi often breathes air with fine-particle (PM2.5) levels well above health guidelines, but residents can only see what the air is like now, not what the coming day will bring. This project forecasts the 24-hour average PM2.5 for the coming day at each of 14 low-cost sensor sites run by The Urban Unit, with the forecast issued at 00:00 Pakistan time (PKT). The inputs are the sensors' own recent history, recorded weather (ERA5 via Open-Meteo) and modelled air quality (CAMS via Open-Meteo).
 
 The core of the project is a multi-layer neural network written from scratch in NumPy: forward pass, backpropagation, mean-squared-error and Huber losses, L2 regularisation, mini-batch SGD and Adam, He and Xavier initialisation, and early stopping. A numerical gradient check confirms the hand-derived gradients (worst relative error $7.8 \times 10^{-10}$). A PyTorch twin, trained from the same initial weights on the same mini-batches, gives predictions that differ from the NumPy network by at most $1.4 \times 10^{-14}$ µg/m³ on 442 test rows.
 
@@ -25,7 +25,7 @@ The proposal approved for this course read:
 
 > "AI system that forecasts Karachi's air pollution level for the next 24 hours using historical air-quality and weather data. A neural network will be built from scratch in NumPy, applying linear algebra and calculus to show how the model learns. It will be validated against PyTorch and compared with standard machine learning models. Explainable AI will highlight the main factors behind each prediction, and a Streamlit dashboard will display forecasts and health alerts."
 
-There is no separate PAI brief. The project overview submitted with the proposal (`docs/briefs/PAI_Overview_original.docx`) describes four parts: the forecaster, the comparison, the explanations and the web app. It lists three things as out of scope: cities other than Karachi, pollutants other than PM2.5, and "official health warnings or alerts". Section 9 explains how the dashboard's health alerts stay inside that limit.
+There is no separate PAI brief. The project overview submitted with the proposal (`docs/briefs/PAI_Overview_original.docx`) describes four parts: the forecaster, the comparison, the explanations and the web app. It lists three things as out of scope: cities other than Karachi, pollutants other than PM2.5, and "official health warnings or alerts". Section 8 explains how the dashboard's health alerts stay inside that limit.
 
 ## Objectives
 
@@ -38,7 +38,7 @@ There is no separate PAI brief. The project overview submitted with the proposal
 
 ## What was delivered
 
-Every promise in the proposal was built and tested; Appendix A maps each one to its code, results and section. The NumPy network (Section 4) is verified (Section 5), tuned (Section 6), compared (Section 7) and forms half of the production ensemble, which SHAP (Section 8) and the dashboard (Section 9) build on.
+Every promise in the proposal was built and tested; Appendix A maps each one to its code, results and section. The NumPy network (Section 3) is verified (Section 4), tuned (Section 5), compared (Section 6) and forms half of the production ensemble, which SHAP (Section 7) and the dashboard (Section 8) build on.
 
 # Data
 
@@ -51,7 +51,7 @@ Every promise in the proposal was built and tested; Appendix A maps each one to 
 | D3 | Open-Meteo Air Quality API (CAMS) | Hourly modelled PM2.5, PM10, NO₂, dust, aerosol optical depth | Modelled-pollution features | 186,816 |
 | D4 | US EPA AQI guidance and WHO 2021 guidelines | Band breakpoints and health advice text | Bands and advice rules | 22 rules |
 
-All three time-series sources are licensed CC BY 4.0 and were downloaded on 8 November 2026. Each download is recorded in a manifest with its endpoint, coordinates and row count. Fourteen sensors have at least 150 complete days. About nine report at any one time, because several sites have long gaps. Weather and CAMS data start a month before the sensors, so that features that look back in time exist from the first day.
+All three time-series sources are licensed CC BY 4.0 and were downloaded on 8 November 2026. Each download is recorded in a manifest with its endpoint, coordinates and row count. Fourteen sensors have at least 150 complete days. Typically seven to nine report on a given day (eight on average), because several sites have long gaps. Weather and CAMS data start a month before the sensors, so that features that look back in time exist from the first day.
 
 The sensors agree closely: daily means correlate between 0.911 and 0.992 across pairs. CAMS returns one value for the whole city, so it acts as a city-wide signal. Daily PM2.5 falls on warmer (r = −0.652) and windier (r = −0.627) days, mostly because the monsoon is warm, windy and clean.
 
@@ -79,7 +79,7 @@ The target for sensor $s$ on day $D$ is the mean of its 24 hourly readings on da
 
 After cleaning, the feature table holds 4,027 labelled sensor-days.
 
-**Leakage rule.** Leakage means letting the model see information it would not have at forecast time. Every history feature for day $D$ uses only hours before 00:00 on day $D$. Only the `fc_*` columns use hours inside day $D$. In training and evaluation those columns hold the recorded weather for day $D$, standing in for a weather forecast. This is called *perfect prognosis*. The live app uses Open-Meteo's actual forecast for day $D$ instead, so live accuracy will be somewhat lower than the scores in this report (Section 11).
+**Leakage rule.** Leakage means letting the model see information it would not have at forecast time. Every history feature for day $D$ uses only hours before 00:00 on day $D$. Only the `fc_*` columns use hours inside day $D$. In training and evaluation those columns hold the recorded weather for day $D$, standing in for a weather forecast. This is called *perfect prognosis*. The live app uses Open-Meteo's actual forecast for day $D$ instead, so live accuracy will be somewhat lower than the scores in this report (Section 10).
 
 **Scaling.** `src/models/dataset.py::Preprocessor` fills missing values with the training median and standardises each column to mean 0 and standard deviation 1. Site columns pass through unscaled. The preprocessor is fitted on the training rows of each split only.
 
@@ -87,7 +87,7 @@ After cleaning, the feature table holds 4,027 labelled sensor-days.
 
 Rows are split by date, never at random, and all sensors share the same cut dates (`src/data/split.py::project_splits`).
 
-- **Cross-validation (CV):** eight rolling-origin folds (Tashman, 2000). Each fold trains on every day before a 30-day test block, leaves a one-day gap, and tests on the block. The blocks run from 1 January to 28 August 2026, so they cover winter smog, the spring transition and the monsoon. Pooled together, the eight test blocks hold 1,458 sensor-days over 240 dates. Every model setting was chosen on these folds.
+- **Cross-validation (CV):** eight rolling-origin folds (Tashman, 2000). In each fold the model learns from all days up to one day before a 30-day block and is then scored on that block; the skipped day keeps training and test rows apart. The blocks run from 1 January to 28 August 2026, so they cover winter smog, the spring transition and the monsoon. Pooled together, the eight test blocks hold 1,458 sensor-days over 240 dates. Every model setting was chosen on these folds.
 - **Final test:** 1 September to 8 November 2026, 442 sensor-days over 69 dates. Each model was trained on all 3,585 labelled rows before 1 September and scored once, after every choice had been frozen. The script `src/evaluate/final_test.py` refuses to run a second time.
 
 A single summer validation block was considered and rejected: June to August 2026 contained no Unhealthy days at all, so it could not show how a model behaves in smog.
@@ -123,7 +123,7 @@ For each layer $l = 1, \dots, L$:
 
 $$Z^{(l)} = A^{(l-1)} W^{(l)} + \mathbf{1}\, b^{(l)\top}$$
 
-The shapes multiply as $(n \times d_{l-1})(d_{l-1} \times d_l) = n \times d_l$. The term $\mathbf{1} b^{\top}$ adds the same bias row to every example, which NumPy does by broadcasting. Hidden layers then apply a non-linear function $\varphi$ to each element; the output layer does not:
+The shapes multiply as $(n \times d_{l-1})(d_{l-1} \times d_l) = n \times d_l$. The term $\mathbf{1} b^{\top}$ adds the same bias row to every example, which NumPy does by broadcasting. Each hidden layer then passes every element through a non-linear function $\varphi$, while the output layer stays linear:
 
 $$A^{(l)} = \varphi\left(Z^{(l)}\right) \quad (l < L), \qquad P = Z^{(L)}.$$
 
@@ -172,11 +172,11 @@ Backpropagation applies the chain rule one layer at a time, from the output back
 
 $$\frac{\partial \mathcal{L}}{\partial W^{(l)}} = A^{(l-1)\top}\, \Delta^{(l)}, \qquad \frac{\partial \mathcal{L}}{\partial b^{(l)}} = \Delta^{(l)\top} \mathbf{1}, \qquad \frac{\partial \mathcal{L}}{\partial A^{(l-1)}} = \Delta^{(l)}\, W^{(l)\top}$$
 
-and, through the activation of the layer below,
+and, stepping back across the lower layer's activation,
 
 $$\Delta^{(l-1)} = \frac{\partial \mathcal{L}}{\partial A^{(l-1)}} \odot \varphi'\left(Z^{(l-1)}\right),$$
 
-where $\odot$ is element-wise multiplication. Each gradient has the same shape as the thing it belongs to: $\partial\mathcal{L}/\partial W^{(l)}$ is $d_{l-1} \times d_l$, like $W^{(l)}$. That is a quick check that the matrix products are the right way round. The bias gradient is the column sum of $\Delta^{(l)}$, because the same bias is added to every row.
+where $\odot$ is element-wise multiplication. A useful sanity check: every gradient must match the shape of the array it belongs to, so $\partial\mathcal{L}/\partial W^{(l)}$ is $d_{l-1} \times d_l$, exactly like $W^{(l)}$. A product written in the wrong order would not line up. Since one bias vector is added to all $n$ rows, its gradient sums $\Delta^{(l)}$ down the rows.
 
 For the tuned network with $n = 32$: $\Delta^{(2)}$ is $32 \times 1$, so $\partial\mathcal{L}/\partial W^{(2)} = A^{(1)\top}\Delta^{(2)}$ is $32 \times 1$; $\partial\mathcal{L}/\partial A^{(1)}$ is $32 \times 32$; the ReLU mask gives $\Delta^{(1)}$, also $32 \times 32$; and $\partial\mathcal{L}/\partial W^{(1)} = X^{\top}\Delta^{(1)}$ is $55 \times 32$.
 
@@ -220,7 +220,7 @@ With plain gradient descent this becomes $W \leftarrow (1 - \eta\lambda) W - \et
 
 ## Optimisers: SGD and Adam
 
-Let $\theta$ be any parameter array, $g_t$ its gradient at step $t$ (including $\lambda\theta$ for weights) and $\eta$ the learning rate.
+Below, $\theta$ stands for any parameter array, $\eta$ for the learning rate and $g_t$ for the gradient at step $t$ (with $\lambda\theta$ added for weights).
 
 **Mini-batch stochastic gradient descent (SGD):** $\theta \leftarrow \theta - \eta\, g_t$.
 
@@ -255,7 +255,7 @@ Biases start at zero. The starting weights are random, with a spread chosen so t
 - **He initialisation** (He et al., 2015) for ReLU and LeakyReLU hidden layers: $W_{ij} \sim \mathcal{N}\left(0, \tfrac{2}{\text{fan}_{\text{in}}}\right)$, where $\text{fan}_{\text{in}} = d_{l-1}$.
 - **Xavier (Glorot) initialisation** (Glorot and Bengio, 2010) for tanh layers and the linear output layer: $W_{ij} \sim \mathcal{U}(-a, a)$ with $a = \sqrt{6/(\text{fan}_{\text{in}} + \text{fan}_{\text{out}})}$, which gives variance $2/(\text{fan}_{\text{in}} + \text{fan}_{\text{out}})$.
 
-The reasoning is short. One pre-activation is a sum of $\text{fan}_{\text{in}}$ terms, so $\operatorname{Var}(z) \approx \text{fan}_{\text{in}}\, \operatorname{Var}(w)\, \mathbb{E}[a^2]$. ReLU sets about half its inputs to zero, which halves $\mathbb{E}[a^2]$, and the factor 2 in He's formula makes up for it. Xavier balances the forward pass ($\text{fan}_{\text{in}}$) against the backward pass ($\text{fan}_{\text{out}}$). Weights that start too large make activations and gradients explode; weights that start too small make them vanish.
+Why these spreads? Each pre-activation adds up $\text{fan}_{\text{in}}$ weight-times-input products, so its variance grows roughly as $\text{fan}_{\text{in}}\, \operatorname{Var}(w)\, \mathbb{E}[a^2]$, and a weight variance proportional to $1/\text{fan}_{\text{in}}$ cancels that growth. ReLU outputs zero for about half of its inputs, halving $\mathbb{E}[a^2]$; He's factor 2 restores it. Xavier uses both $\text{fan}_{\text{in}}$ and $\text{fan}_{\text{out}}$, a compromise between a steady forward signal and a steady backward gradient. Weights that start too large make activations and gradients explode; weights that start too small make them vanish.
 
 All randomness comes from one seed (42). It is split into three independent streams for initialisation, batch shuffling and dropout, so a run can be repeated exactly.
 
@@ -273,7 +273,7 @@ The tuned network makes one further change, in the wrapper `variant.py` (`MLPVar
 
 $$y_{\text{res}} = y - (a + b\, x_{\text{prev}}),$$
 
-where $x_{\text{prev}}$ is yesterday's average PM2.5 and $(a, b)$ are fitted by least squares on the training rows only. At prediction time the line is added back. The wrapper also drops three calendar features (day-of-year sine and cosine, and month), which leaves 55 inputs. Section 6 explains why both changes were made. In the final training run the residual's standard deviation was 16.8 µg/m³, so the losses in the figures are in units of that size.
+where $x_{\text{prev}}$ is yesterday's average PM2.5 and $(a, b)$ are fitted by least squares on the training rows only. At prediction time the line is added back. The wrapper also drops three calendar features (day-of-year sine and cosine, and month), which leaves 55 inputs. Section 5 explains why both changes were made. In the final training run the residual's standard deviation was 16.8 µg/m³, so the losses in the figures are in units of that size.
 
 # Verification
 
@@ -285,7 +285,7 @@ A derivative is a slope, so it can be measured using the forward pass alone. Nud
 
 $$\frac{\partial J}{\partial w} \approx \frac{J(w + \varepsilon) - J(w - \varepsilon)}{2\varepsilon}.$$
 
-The approximation error shrinks with $\varepsilon^2$. This is repeated for every number in every parameter array, and the result is compared with the backward pass using the relative error
+The approximation error shrinks with $\varepsilon^2$. This is repeated for every number in every parameter array, and each result is set against the backward-pass gradient through the relative error
 
 $$\text{rel}(a, \hat a) = \frac{\lVert a - \hat a \rVert_2}{\lVert a \rVert_2 + \lVert \hat a \rVert_2}.$$
 
@@ -348,7 +348,7 @@ With default settings (two hidden layers of 64 and 32 units, $\lambda = 10^{-4}$
 
 **Overfitting.** On folds 0 to 4, the training MAE was about 3 to 6 µg/m³, while the MAE on the held-back validation rows was about 15 to 18. The network was memorising its training days. A smaller network (one layer of 32 units) with a much larger penalty ($\lambda = 0.1$) closed most of that gap.
 
-The third change, the residual target, makes the task easier. Yesterday's average is by far the strongest single predictor (Section 8). With the residual target the network no longer has to relearn that relationship. It only learns how weather and recent changes move today away from a fitted persistence line. The line is fitted on training rows only, so it adds no leakage.
+The third change, the residual target, makes the task easier. Yesterday's average is by far the strongest single predictor (Section 7). With the residual target the network no longer has to relearn that relationship. It only learns how weather and recent changes move today away from a fitted persistence line. The line is fitted on training rows only, so it adds no leakage.
 
 Feature selection and target transformation are normal, documented modelling choices. The comparison stays fair because every model is scored on the same folds, rows and metrics, and on the same once-only final test.
 
@@ -371,7 +371,7 @@ The best configuration, saved in `results/tuning/mlp_numpy_best.json` and fixed 
 
 Its pooled CV scores are MAE 6.63 µg/m³, RMSE 10.58, R² 0.870, and a skill of +23.8% over persistence. Some neighbouring settings scored almost the same: adding dropout of 0.3 gave 6.68. The search is therefore not on a knife edge.
 
-Per fold, the network beat persistence on six of the eight folds. It lost narrowly on fold 5 (3.29 against 2.80) and fold 7 (2.34 against 2.25), both clean monsoon blocks where yesterday's value is already an excellent guess.
+Per fold, the network beat persistence on six of the eight folds. It lost narrowly on fold 5 (31 May to 29 June; 3.29 against 2.80), a clean early-summer block, and on fold 7 (2.34 against 2.25), a clean monsoon block. In both, yesterday's value is already an excellent guess.
 
 ## Seed stability
 
@@ -387,7 +387,7 @@ Every model is trained and scored by the same code, on the same preprocessed mat
 - **Ridge regression:** linear regression with an L2 penalty, the official baseline (tuned $\alpha = 150$).
 - **Random Forest:** an average of 500 decision trees, each trained on a random resample (maximum depth 15, at least 5 rows per leaf, half the features tried at each split).
 - **Gradient Boosting:** scikit-learn's histogram-based gradient boosting (Pedregosa et al., 2011), which adds trees one at a time, each correcting the errors of the previous ones (100 rounds, 31 leaves, L2 0.1).
-- **NumPy network:** Sections 4 to 6.
+- **NumPy network:** Sections 3 to 5.
 - **Ensemble:** the equal-weight average of Gradient Boosting and the NumPy network.
 
 The scikit-learn models were tuned with the same staged search on the same folds. The metrics are MAE, RMSE (root mean squared error, which penalises large misses more), R² (the share of variance explained) and skill.
@@ -408,7 +408,7 @@ Pooled over the 1,458 sensor-days of the eight folds:
 
 The ensemble's row is the average of the Gradient Boosting and NumPy network CV predictions on the same rows, scored with the same metric code (`results/tuning/ensemble_cv_metrics.json`).
 
-Tuning took the network from the worst model to third place, between Random Forest and Gradient Boosting. Its MAE is 0.33 µg/m³ behind Gradient Boosting, 0.09 behind Random Forest, and well ahead of Ridge and persistence.
+Tuning took the network from the worst model to third among the single models, just behind Random Forest and Gradient Boosting. Its MAE is 0.33 µg/m³ behind Gradient Boosting, 0.09 behind Random Forest, and well ahead of Ridge and persistence.
 
 ## The ensemble
 
@@ -491,7 +491,7 @@ Sensor S11 (Orangi Pilot Project) on 20 December 2025, a winter smog day (`resul
 | The reading an hour before issue was high (195.0) | +19.1 |
 | The forecast day's CAMS PM2.5 was high (59.3) | +13.4 |
 | The forecast day's CAMS NO₂ was high (55.0) | +11.7 |
-| Remaining 54 features combined (e.g. last three days' average +6.9, yesterday's variability −6.6) | +26.5 |
+| Remaining 54 features combined (e.g. last three days' average +6.9, yesterday's variability −6.6) | +26.4 |
 | **Forecast** | **157.3** |
 
 The app turns the top three into sentences, for example: "Yesterday's average PM2.5 was high (137.3 µg/m³), which raised the forecast by about 37 µg/m³." The reverse case also works. For S2 (Zafar Memon DHA) on 10 September 2025, the forecast was 5.0 µg/m³: a clean previous day lowered it by about 17 µg/m³, and 86 mm of rain the day before lowered it by about 7.
@@ -515,13 +515,13 @@ This is the home page. From top to bottom it shows:
 - "Why this forecast?", with the top three SHAP reasons;
 - a chart of the last 72 hours of readings next to the forecast.
 
-![The Forecast page: site picker, forecast value and band, health alert.](docs/report/figures/app_forecast.png)
+![The Forecast page: city-wide alert, sites without a forecast, and the site map coloured by forecast band.](docs/report/figures/app_forecast.png)
 
 **Health alerts.** The proposal promised health alerts. The overview lists "official health warnings or alerts" as out of scope. Both are respected: the app shows informational alerts that are clearly marked as not official. `src/ui/health_alert.py` produces two kinds. A site alert appears when the selected site's band is USG or worse, shown as a warning for USG and as an error for Unhealthy or worse. A city-wide line counts how many of today's forecast sites are USG or worse. Every site alert ends with "Informational only — not an official alert." The alerts come from EPA's published band definitions applied to the model's forecast. No government agency issues them, and the app does not claim otherwise.
 
-**Advice.** The advice comes from a small rule-based expert system (`src/expert/`, rules R01 to R22). Rules are applied repeatedly until no new facts appear (*forward chaining*). They turn the band, the trend since today and the two profile switches into advice quoted from EPA guidance. Each piece of advice cites its source and shows which rules fired and why. If a forecast sits within 5 µg/m³ below the next band, the advice follows the worse band and says so, while the displayed band stays unchanged. A disclaimer on every advice panel says the guidance is general and not medical advice. The profile switches are kept only for the session and never stored. The expert system is described in full in the AIES report.
+**Advice.** The advice comes from a small rule-based expert system (`src/expert/`, rules R01 to R22). Rules are applied repeatedly until no new facts appear (*forward chaining*). They turn the band, the change from the previous day and the two profile switches into advice quoted from EPA guidance. Each piece of advice cites its source and shows which rules fired and why. If a forecast sits within 5 µg/m³ below the next band, the advice follows the worse band and says so, while the displayed band stays unchanged. A disclaimer on every advice panel says the guidance is general and not medical advice. The profile switches are kept only for the session and never stored. The expert system is described in full in the AIES report.
 
-![Advice for a sensitive user with outdoor plans, with the rules that fired.](docs/report/figures/app_advice.png)
+![Advice for a sensitive user with outdoor plans: the forecast is near the Unhealthy boundary, so the safety margin gives the more cautious advice and says so; the rule trace sits in the collapsed panel.](docs/report/figures/app_advice.png)
 
 ## Model comparison and About pages
 
@@ -563,7 +563,7 @@ For example, `uv run pytest -q --no-cov tests/test_numpy_nn_layers.py tests/test
 
 **Perfect-prognosis weather.** Evaluation used recorded weather for the forecast day; the live app uses a forecast. Live accuracy will be lower by an amount that has not yet been measured. Future work: archive the live forecasts each day and score them once a few months have built up.
 
-**Short history.** Seventeen months of data cover each season only once or twice. This caused the unseen-season problem in Section 6 and limits how much any model can learn about the seasonal cycle. Dropping the calendar features was a fix for this data set, not a general rule. With two or more full years, the calendar features should be tested again.
+**Short history.** About 16½ months of data (20 June 2025 to 8 November 2026) cover each season only once or twice. This caused the unseen-season problem in Section 5 and limits how much any model can learn about the seasonal cycle. Dropping the calendar features was a fix for this data set, not a general rule. With two or more full years, the calendar features should be tested again.
 
 **The network trails Gradient Boosting.** On tabular data of this size, boosted trees are hard to beat, and the NumPy network is about 5% behind on final-test MAE. Its contribution is through the ensemble. Possible improvements include learning-rate schedules, batch normalisation, or one network per season, but each would need the same careful fold-based evaluation.
 
@@ -581,7 +581,9 @@ The project delivered what the proposal promised. A neural network was written f
 
 The untuned network performed worse than persistence. A per-fold diagnosis traced that to unseen seasons and overfitting, and three documented changes fixed it: dropping the calendar features, using a smaller and more regularised network, and learning a residual from persistence. On the once-only final test the tuned network reached an MAE of 4.98 µg/m³. That beats Ridge, Random Forest and persistence and comes close to Gradient Boosting (4.73). Averaged with Gradient Boosting, it gives the best model of all (4.63 µg/m³, R² 0.861), which now runs in the app. SHAP shows that yesterday's pollution drives most of each forecast, with weather and modelled pollution adjusting it. The Streamlit dashboard brings forecasts, informational health alerts, advice and reasons together in one place, and it keeps working offline.
 
-# References
+# References {-}
+
+Copernicus Atmosphere Monitoring Service (CAMS). Atmospheric composition forecasts, accessed through the Open-Meteo Air Quality API. https://atmosphere.copernicus.eu
 
 Glorot, X. and Bengio, Y. (2010). Understanding the difficulty of training deep feedforward neural networks. In *Proceedings of the 13th International Conference on Artificial Intelligence and Statistics (AISTATS)*, PMLR 9, pp. 249–256.
 
@@ -597,8 +599,6 @@ Kingma, D. P. and Ba, J. (2015). Adam: a method for stochastic optimization. In 
 
 Lundberg, S. M. and Lee, S.-I. (2017). A unified approach to interpreting model predictions. In *Advances in Neural Information Processing Systems 30 (NeurIPS 2017)*, pp. 4765–4774.
 
-Copernicus Atmosphere Monitoring Service (CAMS). Atmospheric composition forecasts, accessed through the Open-Meteo Air Quality API. https://atmosphere.copernicus.eu
-
 OpenAQ. Open air quality data platform, API v3. https://openaq.org (data from The Urban Unit's AirGradient sensors, CC BY 4.0; accessed 8 November 2026).
 
 Open-Meteo. Historical Weather API and Air Quality API. https://open-meteo.com (CC BY 4.0; accessed 8 November 2026).
@@ -611,27 +611,27 @@ Streamlit. Streamlit open-source app framework. https://streamlit.io
 
 Tashman, L. J. (2000). Out-of-sample tests of forecasting accuracy: an analysis and review. *International Journal of Forecasting*, 16(4), pp. 437–450.
 
-US Environmental Protection Agency (2024). *Technical Assistance Document for the Reporting of Daily Air Quality — the Air Quality Index (AQI)*. Research Triangle Park, NC: US EPA (reflects the 2024 PM2.5 standard revision). https://document.airnow.gov/technical-assistance-document-forthe-reporting-of-daily-air-quailty.pdf
+US Environmental Protection Agency (2024). *Technical Assistance Document for the Reporting of Daily Air Quality — the Air Quality Index (AQI)*. Research Triangle Park, NC: US EPA (reflects the 2024 PM2.5 standard revision). https://document.airnow.gov/technical-assistance-document-for-the-reporting-of-daily-air-quailty.pdf
 
 US Environmental Protection Agency / AirNow (2023). *Air Quality Guide for Particle Pollution*. EPA-452/F-23-002.
 
 World Health Organization (2021). *WHO global air quality guidelines: particulate matter (PM2.5 and PM10), ozone, nitrogen dioxide, sulfur dioxide and carbon monoxide*. Geneva: WHO.
 
-# Appendix A: Proposal promises and evidence
+# Appendix A: Proposal promises and evidence {-}
 
 | Promise | Code | Results | Section |
 |---|---|---|---|
-| Forecast Karachi's air pollution for the next 24 hours | `src/data/features.py` (target), `src/models/final.py`, `src/live/pipeline.py` | `results/final_test/` | 3, 7 |
-| Using historical air-quality and weather data | `src/data/download_*.py`, `clean.py`, `features.py` | `data/raw/*/manifest.json` | 3 |
-| Neural network built from scratch in NumPy | `src/models/numpy_nn/` (layers, losses, optimizers, init, network, estimator_base, variant) | `results/tuning/mlp_numpy_best.json` | 4, 6 |
-| Applying linear algebra and calculus to show how it learns | `layers.py`, `losses.py`, `optimizers.py`, `gradcheck.py` | `results/numpy_vs_torch/gradcheck.csv`, `learning_curve.png` | 4, 5.1, 6.1 |
-| Validated against PyTorch | `src/models/torch_nn/` | `results/numpy_vs_torch/summary.md`, `summary.json`, `loss_curves.png` | 5.2 |
-| Compared with standard machine-learning models | `src/models/baselines/`, `src/evaluate/` | `results/baselines_summary.md`, `results/tuning/classical_summary.md`, `results/final_test/` | 7 |
-| Explainable AI on the main factors behind each prediction | `src/explain/` | `results/explain/` | 8 |
-| Streamlit dashboard with forecasts | `app/`, `src/ui/` | screenshots in Section 9 | 9 |
-| Health alerts (informational, not official) | `src/ui/health_alert.py`, `src/expert/` | `tests/test_ui_health_alert.py`, `tests/test_expert_*.py` | 9 |
+| Forecast Karachi's air pollution for the next 24 hours | `src/data/features.py` (target), `src/models/final.py`, `src/live/pipeline.py` | `results/final_test/` | 2, 6 |
+| Using historical air-quality and weather data | `src/data/download_*.py`, `clean.py`, `features.py` | `data/raw/*/manifest.json` | 2 |
+| Neural network built from scratch in NumPy | `src/models/numpy_nn/` (layers, losses, optimizers, init, network, estimator_base, variant) | `results/tuning/mlp_numpy_best.json` | 3, 5 |
+| Applying linear algebra and calculus to show how it learns | `layers.py`, `losses.py`, `optimizers.py`, `gradcheck.py` | `results/numpy_vs_torch/gradcheck.csv`, `learning_curve.png` | 3, 4.1, 5.1 |
+| Validated against PyTorch | `src/models/torch_nn/` | `results/numpy_vs_torch/summary.md`, `summary.json`, `loss_curves.png` | 4.2 |
+| Compared with standard machine-learning models | `src/models/baselines/`, `src/evaluate/` | `results/baselines_summary.md`, `results/tuning/classical_summary.md`, `results/final_test/` | 6 |
+| Explainable AI on the main factors behind each prediction | `src/explain/` | `results/explain/` | 7 |
+| Streamlit dashboard with forecasts | `app/`, `src/ui/` | screenshots in Section 8 | 8 |
+| Health alerts (informational, not official) | `src/ui/health_alert.py`, `src/expert/` | `tests/test_ui_health_alert.py`, `tests/test_expert_*.py` | 8 |
 
-# Appendix B: How to reproduce
+# Appendix B: How to reproduce {-}
 
 ```
 uv sync                                                 # install the locked environment
