@@ -11,14 +11,22 @@ from the saved predictions by `python -m src.evaluate.band_report`, no retrainin
 
 **Rule, in priority order:**
 
+0. **Eligibility.** A "predict PM2.5, then band it" route qualifies only if its regressor's CV
+   mean absolute error (MAE) is within about 10% of the best (6.16 µg/m³, so up to ~6.8).
+   A forecaster that is clearly worse at the number itself should not win by leaning towards
+   the worse band. Eligible: the ensemble (6.16), Gradient Boosting (6.30), Random Forest (6.54)
+   and the NumPy network (6.63). Not eligible: Ridge (7.22, +17%) and persistence (8.70); they
+   stay in the tables as baselines. Direct band classifiers have no MAE and are compared on
+   rules 1–3 alone.
 1. **Fewest missed Unhealthy-or-worse days** (true band Unhealthy or Very Unhealthy, forecast
    cleaner). A missed bad day costs more health-wise than a false alarm: people who should have
-   stayed indoors do not.
+   stayed indoors do not. A route is ruled out here only if it misses *clearly* more than the
+   best: the 95% date-block bootstrap interval of the difference must exclude zero.
 2. Then **accuracy** (share of days in the right band).
 3. Then **macro-F1** (F1 averaged over the bands, so rare bands count as much as common ones).
 
-The regressors were first tuned, and the ensemble's members picked, on mean absolute error (MAE);
-the band routes were then compared with this rule.
+The regressors were first tuned, and the ensemble's members picked, on MAE; the band routes were
+then compared with this rule.
 
 **Official baselines:** Ridge regression (regression, then banded) and logistic regression
 (direct band classification). Persistence (the day's average = the previous day's average) is the
@@ -125,17 +133,24 @@ With 95% intervals (`results/bands/bootstrap_ci.csv`):
   −15.9 points [−25.3, −7.6].
 - **Against Ridge → band** (official regression baseline), the ensemble is more accurate
   (+3.1 points [+1.4, +4.9]), has a much higher macro-F1 (+0.091 [+0.034, +0.161]) and fewer
-  false alarms (−3.0 points [−5.2, −1.3]). **But Ridge misses fewer bad days** (5.6% vs 8.0%,
-  difference +2.4 points [+0.3, +5.0]), so applied strictly, rule 1 would pick Ridge here. Ridge
-  gets that by forecasting "Unhealthy" too often: it never forecasts Very Unhealthy, flags 8.7% of
-  cleaner days, and its MAE is 15% worse. That is the same trade as adding a safety margin (below),
-  which we rejected for the band shown. Ridge was not one of the band routes compared when the
-  choice was made; this table adds it so the trade is visible. On the final test the two miss the
-  same share of bad days (14.8% each).
+  false alarms (−3.0 points [−5.2, −1.3]). Ridge misses fewer bad days (5.6% vs 8.0%,
+  difference +2.4 points [+0.3, +5.0]), but it fails rule 0: its MAE is 17% worse than the
+  ensemble's. It gets the lower miss rate by forecasting "Unhealthy" too often: it never forecasts
+  Very Unhealthy and flags 8.7% of cleaner days. That is the same trade as adding a safety margin
+  (below), which we rejected for the band shown. On the final test the two miss the same share of
+  bad days (14.8% each).
+- **Against the eligible single models, banded** (rule 0 lets them in): Random Forest → band
+  misses 6.2% of bad days and Gradient Boosting → band 7.1%, against the ensemble's 8.0%. Both
+  gaps are within noise (ensemble − RF +1.8 points [−1.3, +5.0]; ensemble − GB +0.9 points
+  [−1.3, +3.0]), so rule 1 does not separate them. On rule 2 the ensemble is clearly more
+  accurate (+3.1 points [+1.2, +5.0] over RF, +1.9 points [+0.6, +3.4] over GB) and it also has
+  fewer false alarms (5.6% vs 7.4% and 6.6%). The NumPy network → band misses clearly more
+  (13.0%; ensemble − network −5.0 points [−9.4, −1.7]). All intervals are in
+  `results/bands/bootstrap_ci.csv` (`python -m src.evaluate.band_report --n-boot 2000`).
 
-**Chosen:** predict PM2.5 with the ensemble, then look up its band. Among the routes compared at
-the time (persistence, the direct classifiers, the ensemble) it misses the fewest Unhealthy-or-worse
-days and is the most accurate. Its weak spot is the rare extremes: it recognises only 57% of Good
+**Chosen:** predict PM2.5 with the ensemble, then look up its band. Among the eligible routes
+(rule 0) and the direct classifiers, none misses clearly fewer Unhealthy-or-worse days (rule 1),
+and the ensemble is the most accurate (rule 2). Its weak spot is the rare extremes: it recognises only 57% of Good
 days and 16% of the 25 Very Unhealthy days, because averaging models pulls extreme forecasts
 toward the middle.
 

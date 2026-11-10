@@ -43,10 +43,16 @@ OUT_DIR = RESULTS_DIR / "bands"
 FINAL_PREDICTIONS = RESULTS_DIR / "final_test" / "predictions.parquet"
 DIRECT_CLASSIFIERS: tuple[str, ...] = ("hist_gb_clf", "random_forest_clf", "logistic_regression")
 OFFICIAL_BASELINES: tuple[str, ...] = ("ridge", "logistic_regression")  # regression / direct classification
+# Single regressors whose CV MAE is within ~10% of the ensemble's — rule 0 in
+# docs/report/model_selection.md lets their banded routes compete, so they are compared too.
+ELIGIBLE_REGRESSORS: tuple[str, ...] = ("hist_gb", "random_forest", "mlp_numpy")
 DISPLAY = {
     "ensemble": "Ensemble -> band (production)",
     "persistence": "Persistence -> band",
     "ridge": "Ridge -> band (tuned regression baseline)",
+    "hist_gb": "Gradient Boosting -> band",
+    "random_forest": "Random Forest -> band",
+    "mlp_numpy": "NumPy network -> band",
     "hist_gb_clf": "Gradient Boosting classifier (direct)",
     "random_forest_clf": "Random Forest classifier (direct)",
     "logistic_regression": "Logistic regression (direct, baseline)",
@@ -67,12 +73,17 @@ def load_cv_bands(tuning_dir: Path = TUNING_DIR) -> pd.DataFrame:
     a mismatch raises `ValueError` rather than silently scoring different row sets.
     """
     ens = load_ensemble_cv(tuning_dir)
-    ridge = pd.read_parquet(cv_predictions_path(tuning_dir, "ridge"))
     table = ens[[*KEY_COLUMNS, "band_true"]].assign(
         band_ensemble=ens["band_pred"].to_numpy(np.int64),
         band_persistence=_to_band(ens["persistence"].to_numpy()),
     )
-    table = table.merge(ridge[[*KEY_COLUMNS, "band_pred"]].rename(columns={"band_pred": "band_ridge"}), on=KEY_COLUMNS, how="left")
+    for name in ("ridge", *ELIGIBLE_REGRESSORS):
+        reg = pd.read_parquet(cv_predictions_path(tuning_dir, name))
+        table = table.merge(
+            reg[[*KEY_COLUMNS, "band_pred"]].rename(columns={"band_pred": f"band_{name}"}), on=KEY_COLUMNS, how="left"
+        )
+        if table[f"band_{name}"].isna().any():
+            raise ValueError(f"{name} CV predictions do not match the ensemble's rows")
     for name in DIRECT_CLASSIFIERS:
         clf = pd.read_parquet(cv_predictions_path(tuning_dir, name)).rename(
             columns={"y_true": f"true_{name}", "y_pred": f"band_{name}"}
@@ -81,8 +92,6 @@ def load_cv_bands(tuning_dir: Path = TUNING_DIR) -> pd.DataFrame:
         if table[f"band_{name}"].isna().any() or not (table[f"true_{name}"] == table["band_true"]).all():
             raise ValueError(f"{name} CV predictions do not match the ensemble's rows")
         table = table.drop(columns=f"true_{name}")
-    if table["band_ridge"].isna().any():
-        raise ValueError("ridge CV predictions do not match the ensemble's rows")
     band_cols = [c for c in table.columns if c.startswith("band_")]
     return table.astype({c: np.int64 for c in band_cols})
 
@@ -91,6 +100,7 @@ def load_final_bands(path: Path = FINAL_PREDICTIONS) -> pd.DataFrame:
     """Final-test band table (read-only use of the saved one-time predictions)."""
     pred = pd.read_parquet(path)
     keep = ["sensor_id", "date", "band_true", "band_ensemble", "band_persistence", "band_ridge", "band_random_forest_clf"]
+    keep += [f"band_{m}" for m in ELIGIBLE_REGRESSORS if f"band_{m}" in pred.columns]
     return pred[keep].copy()
 
 
@@ -275,10 +285,11 @@ def build_report(
         counts.append(c)
         recalls.append(r)
         baselines = [m for m in OFFICIAL_BASELINES if m in available_models(table) and m not in focus]
+        eligible = [m for m in ELIGIBLE_REGRESSORS if m in available_models(table)]
         ci = bs.date_block_bootstrap(
             table,
-            {m: f"band_{m}" for m in [*focus, *baselines]},
-            pairs=[("ensemble", m) for m in ["persistence", best[set_name], *baselines]],
+            {m: f"band_{m}" for m in [*focus, *baselines, *eligible]},
+            pairs=[("ensemble", m) for m in ["persistence", best[set_name], *baselines, *eligible]],
             n_boot=n_boot,
             seed=seed,
         )

@@ -198,7 +198,7 @@ def _write_tuning_dir(root: Path, n_dates: int = 12) -> Path:
     keys = pd.DataFrame({"sensor_id": ["S1", "S2", "S3"] * n_dates, "date": dates, "fold": 0})
     reg = keys.assign(y_true=pm, persistence=pm * 0.9, band_true=bands.to_numpy())
     root.mkdir(parents=True, exist_ok=True)
-    for name, noise in (("hist_gb", 3.0), ("mlp_numpy", -3.0), ("ridge", 8.0)):
+    for name, noise in (("hist_gb", 3.0), ("mlp_numpy", -3.0), ("random_forest", 2.0), ("ridge", 8.0)):
         table = reg.assign(y_pred=pm + noise, band_pred=bands.to_numpy())
         table.to_parquet(root / f"{name}_cv_predictions.parquet")
     for name, shift in (("hist_gb_clf", 0), ("random_forest_clf", -1), ("logistic_regression", 1)):
@@ -218,6 +218,7 @@ def _write_final(path: Path) -> Path:
             "band_ensemble": band_true,
             "band_persistence": np.clip(band_true - 1, 0, 4),
             "band_ridge": band_true,
+            "band_hist_gb": band_true,
             "band_random_forest_clf": np.clip(band_true + 1, 0, 4),
             "pred_ensemble": 1.0,
         }
@@ -290,3 +291,14 @@ def test_cli_main_writes_report(tmp_path):
     out = tmp_path / "cli"
     br.main(["--tuning-dir", str(tuning), "--final-predictions", str(final), "--out-dir", str(out), "--n-boot", "20"])
     assert (out / "summary.md").exists()
+
+
+def test_cv_report_compares_the_ensemble_with_each_eligible_single_regressor(tmp_path):
+    cv = br.load_cv_bands(_write_tuning_dir(tmp_path / "tuning"))
+    final = br.load_final_bands(_write_final(tmp_path / "final.parquet"))
+    results = br.build_report(cv, final, out_dir=tmp_path / "out", n_boot=20)
+    ci = results["ci"]
+    cv_diffs = set(ci.loc[ci["set"] == "cv", "model"])
+    for name in br.ELIGIBLE_REGRESSORS:
+        assert any(name in m and "ensemble" in m for m in cv_diffs), name
+    assert "band_hist_gb" in final.columns  # final-test columns kept when present

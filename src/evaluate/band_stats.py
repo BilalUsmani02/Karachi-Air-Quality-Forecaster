@@ -224,7 +224,9 @@ def rank_by_selection_rule(metrics: pd.DataFrame) -> pd.DataFrame:
 
     Priority: fewest missed Unhealthy-or-worse days (`miss_rate`, lower first), then `accuracy`
     (higher first), then `macro_f1_all` (higher first). A missed bad day costs more health-wise
-    than a false alarm, so safety comes before overall accuracy.
+    than a false alarm, so safety comes before overall accuracy. Rule 0 in
+    `docs/report/model_selection.md` (regress-then-band routes need a CV MAE within ~10% of the
+    best) is applied before this ranking; direct classifiers skip it.
     """
     return metrics.sort_values(
         ["miss_rate", "accuracy", "macro_f1_all"], ascending=[True, False, False], kind="stable", na_position="last"
