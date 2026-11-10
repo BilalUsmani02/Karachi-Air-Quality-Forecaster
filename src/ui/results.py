@@ -57,6 +57,7 @@ class SensorSummary:
     lon: float
     forecast_pm25: float | None  # None if this sensor has no row in the snapshot
     band_name: str  # band name, or NO_FORECAST_LABEL
+    band_index: int | None  # band index (0-5), or None if this sensor has no forecast today
     color: str  # EPA band colour, or NO_FORECAST_COLOR
     has_forecast: bool
 
@@ -101,6 +102,7 @@ def all_sensor_summaries(snapshot: Snapshot) -> list[SensorSummary]:
                     lon=sensor.lon,
                     forecast_pm25=None,
                     band_name=NO_FORECAST_LABEL,
+                    band_index=None,
                     color=NO_FORECAST_COLOR,
                     has_forecast=False,
                 )
@@ -115,6 +117,7 @@ def all_sensor_summaries(snapshot: Snapshot) -> list[SensorSummary]:
                 lon=sensor.lon,
                 forecast_pm25=float(row.forecast_pm25),
                 band_name=band_name(band_idx),
+                band_index=band_idx,
                 color=EPA_COLORS[band_idx],
                 has_forecast=True,
             )

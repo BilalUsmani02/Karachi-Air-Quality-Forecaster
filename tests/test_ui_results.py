@@ -29,7 +29,14 @@ def test_a_sensor_with_a_forecast_gets_its_band_and_colour(fake_snapshot):
     assert s1.has_forecast
     assert s1.forecast_pm25 == pytest.approx(6.0)
     assert s1.band_name == "Good"
+    assert s1.band_index == 0
     assert s1.color == "#00E400"
+
+
+def test_a_sensor_with_a_usg_forecast_has_band_index_two(fake_snapshot):
+    summaries = {s.sensor_id: s for s in all_sensor_summaries(fake_snapshot)}
+    assert summaries["S5"].band_index == 2
+    assert summaries["S5"].band_name == "Unhealthy for Sensitive Groups"
 
 
 def test_a_sensor_without_a_forecast_is_greyed_out(fake_snapshot):
@@ -38,6 +45,7 @@ def test_a_sensor_without_a_forecast_is_greyed_out(fake_snapshot):
     assert not missing.has_forecast
     assert missing.forecast_pm25 is None
     assert missing.band_name == NO_FORECAST_LABEL
+    assert missing.band_index is None
     assert missing.color == NO_FORECAST_COLOR
 
 
