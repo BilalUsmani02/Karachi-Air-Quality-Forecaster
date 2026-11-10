@@ -1,0 +1,31 @@
+set,model,true,Good,Moderate,USG,Unhealthy,Very Unhealthy
+cv,ensemble,Good,37,28,0,0,0
+cv,ensemble,Moderate,2,703,54,3,0
+cv,ensemble,USG,0,58,174,60,0
+cv,ensemble,Unhealthy,0,0,27,287,0
+cv,ensemble,Very Unhealthy,0,0,0,21,4
+cv,persistence,Good,47,18,0,0,0
+cv,persistence,Moderate,17,673,62,9,1
+cv,persistence,USG,0,61,181,50,0
+cv,persistence,Unhealthy,0,6,55,239,14
+cv,persistence,Very Unhealthy,0,0,0,15,10
+cv,hist_gb_clf,Good,40,25,0,0,0
+cv,hist_gb_clf,Moderate,13,713,33,3,0
+cv,hist_gb_clf,USG,0,65,160,67,0
+cv,hist_gb_clf,Unhealthy,0,0,34,277,3
+cv,hist_gb_clf,Very Unhealthy,0,0,0,20,5
+final_test,ensemble,Good,0,1,0,0,0
+final_test,ensemble,Moderate,0,216,9,0,0
+final_test,ensemble,USG,0,31,83,14,0
+final_test,ensemble,Unhealthy,0,0,13,75,0
+final_test,ensemble,Very Unhealthy,0,0,0,0,0
+final_test,persistence,Good,0,1,0,0,0
+final_test,persistence,Moderate,2,206,17,0,0
+final_test,persistence,USG,0,25,87,16,0
+final_test,persistence,Unhealthy,0,1,19,68,0
+final_test,persistence,Very Unhealthy,0,0,0,0,0
+final_test,random_forest_clf,Good,1,0,0,0,0
+final_test,random_forest_clf,Moderate,7,196,22,0,0
+final_test,random_forest_clf,USG,0,14,107,7,0
+final_test,random_forest_clf,Unhealthy,0,0,18,70,0
+final_test,random_forest_clf,Very Unhealthy,0,0,0,0,0
