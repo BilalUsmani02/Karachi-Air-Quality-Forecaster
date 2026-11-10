@@ -41,7 +41,11 @@ class MLPVariant:
     """`MLPRegressorNP` plus an optional dropped-feature set and a residual-from-persistence target.
 
     Every other keyword goes straight to `MLPRegressorNP` (`hidden_sizes`, `l2`, ...).
+    `regressor_cls` is the network class inside the wrapper; the NumPy-vs-PyTorch report swaps
+    in `MLPRegressorTorch` so both networks get exactly the same columns and residual target.
     """
+
+    regressor_cls: type = MLPRegressorNP
 
     def __init__(self, feature_set: str = "all", target: str = "level", **mlp_params: Any) -> None:
         if feature_set not in FEATURE_SETS:
@@ -69,7 +73,7 @@ class MLPVariant:
         self.columns_ = self._columns(X.shape[1])
         design = np.column_stack([np.ones(len(X)), X[:, PERSISTENCE_INDEX]])
         self.anchor_coef_ = np.linalg.lstsq(design, y, rcond=None)[0]
-        self.model_ = MLPRegressorNP(**self.mlp_params).fit(X[:, self.columns_], y - self._anchor(X))
+        self.model_ = self.regressor_cls(**self.mlp_params).fit(X[:, self.columns_], y - self._anchor(X))
         return self
 
     def predict(self, X: np.ndarray) -> np.ndarray:

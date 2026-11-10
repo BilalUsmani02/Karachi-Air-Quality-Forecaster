@@ -3,6 +3,9 @@
 A multi-layer perceptron for next-day PM2.5, written with NumPy only — no autograd, no
 deep-learning library. A PyTorch twin (`src/models/torch_nn/`) proves it is correct.
 
+**Full derivation** (L-layer forward/backward, MSE and Huber, L2, SGD and Adam, initialisation,
+early stopping, verification results, learning curve): [`docs/report/numpy_network.md`](../../../docs/report/numpy_network.md).
+
 ## Files
 
 | File | What it does |
@@ -13,7 +16,7 @@ deep-learning library. A PyTorch twin (`src/models/torch_nn/`) proves it is corr
 | `optimizers.py` | `SGD` and `Adam` (bias-corrected, PyTorch defaults); L2 as weight decay on weights only. |
 | `network.py` | `Sequential` container, `build_mlp(weights, ...)`, and the user-facing `MLPRegressorNP`. |
 | `estimator_base.py` | The training loop shared with the PyTorch twin: input checks, last-rows validation split, target scaling, shuffled mini-batches, early stopping, `get_params`/`set_params`. |
-| `gradcheck.py` | Numerical gradient check (central differences, float64). |
+| `gradcheck.py` | Numerical gradient check (central differences, float64). `python -m src.models.numpy_nn.gradcheck` writes `results/numpy_vs_torch/gradcheck.csv`. |
 
 ## Usage
 
@@ -63,3 +66,5 @@ weight a little against its gradient (Adam scales that step per weight).
    training steps (SGD and Adam, MSE and Huber, with and without L2) every per-step loss and every
    final weight agrees to about **1e-16**, i.e. floating-point rounding. Two independent
    implementations of the same maths agreeing that closely means the NumPy one is right.
+   On the real data with the tuned settings (`python -m src.models.torch_nn` →
+   `results/numpy_vs_torch/`), predictions agree to ~1e-14 µg/m³ and weights to ~1e-16.
