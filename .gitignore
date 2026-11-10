@@ -41,3 +41,5 @@ data/cache/
 
 # Demo kit zips (scripts/make_demo_kit.py)
 dist/
+
+# Built report files (rebuild with docs/report/build.py)

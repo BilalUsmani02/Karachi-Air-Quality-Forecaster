@@ -39,5 +39,5 @@ source = ["src"]
 omit = ["src/**/__init__.py"]
 
 [tool.coverage.report]
-# Target is 80% (spec §13). Enforced from Phase 8; raise fail_under then.
-fail_under = 0
+# Target is 80% (spec §13), enforced from Phase 8.
+fail_under = 80

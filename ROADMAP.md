@@ -18,7 +18,7 @@
 | 5 | Improve + classify | ✅ Done | 8 Nov 2026 | 10 Nov 2026 |
 | 6 | Rules + explanations | ✅ Done | 10 Nov 2026 | 10 Nov 2026 |
 | 7 | App | ✅ Done | 10 Nov 2026 | 10 Nov 2026 |
-| 8 | Reports + viva | ⬜ Not started | | |
+| 8 | Reports + viva | 🟨 In progress | 10 Nov 2026 | |
 | 9 | Stretch (optional) | ⬜ Not started | | |
 
 Status key: ⬜ Not started · 🟨 In progress · ✅ Done · ⛔ Blocked (write why in the phase notes)
@@ -305,12 +305,12 @@ monsoon validation block had zero Unhealthy days (spec §5.3).
 **Goal:** submissions that point to real code and real results.
 **Effort:** ~1 week · **Spec:** §3, §4, §12
 
-- [ ] Pipeline / methodology diagram
+- [x] Pipeline / methodology diagram (`docs/report/figures/pipeline.png`)
 - [ ] **AIES report** (≥10 pages) — lead with classification, expert system, baseline → improvement
 - [ ] **PAI report** — lead with the NumPy network and comparison (format per PAI brief)
 - [ ] Each report written fresh from shared results — no copied paragraphs
 - [ ] Traceability table (spec §3): every row points to real code / section
-- [ ] Coverage ≥80% on `src/`
+- [x] Coverage ≥80% on `src/` (98%; `fail_under = 80` enforced)
 - [ ] Viva prep for every member: inputs/outputs, why each model over alternatives, real-life use
 - [ ] Fill group members + ownership in spec §11.1
 - [ ] Slides (if required)
