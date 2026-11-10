@@ -38,3 +38,6 @@ results/tuning/_*.log
 
 # Live forecast cache (src/live)
 data/cache/
+
+# Demo kit zips (scripts/make_demo_kit.py)
+dist/
