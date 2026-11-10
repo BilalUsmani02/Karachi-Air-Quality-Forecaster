@@ -12,13 +12,13 @@ import streamlit as st
 
 from src.ui.compare import (
     FAIRNESS_CAVEAT,
-    NUMPY_VS_PYTORCH_NOTE,
     PRODUCTION_MODEL_LABEL,
     band_route_table,
     fairness_per_sensor,
     final_test_metrics,
     global_shap_importance,
     mae_bar_data,
+    numpy_vs_pytorch_note,
 )
 
 
@@ -78,7 +78,7 @@ def _render_bands_section() -> None:
 
 def _render_numpy_vs_pytorch_section() -> None:
     st.subheader("From-scratch NumPy network vs. its PyTorch twin")
-    st.write(NUMPY_VS_PYTORCH_NOTE)
+    st.write(numpy_vs_pytorch_note())
 
 
 def _render_shap_section() -> None:

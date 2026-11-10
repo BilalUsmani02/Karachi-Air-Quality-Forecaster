@@ -16,6 +16,7 @@ from src.ui.compare import (
     final_test_metrics,
     global_shap_importance,
     mae_bar_data,
+    numpy_vs_pytorch_note,
 )
 
 
@@ -90,8 +91,11 @@ def test_mae_bar_data_keeps_only_model_and_mae(results_dir):
 
 def test_band_route_table_keeps_regress_then_band_plus_the_best_direct_classifier(results_dir):
     table = band_route_table(results_dir)
-    assert set(table["Route"]) == {"regress_then_band", "direct"}
-    assert list(table.columns) == ["Model", "Route", "Accuracy", "Unhealthy days missed", "False alarms"]
+    assert set(table["Route"]) == {"Predict PM2.5, then its band", "Predict the band directly"}
+    assert list(table.columns) == [
+        "Model", "Route", "Accuracy (%)", "Unhealthy days missed (%)", "False alarms (%)"
+    ]
+    assert table["Accuracy (%)"].max() == 85.0
     assert len(table) == 3
 
 
@@ -118,8 +122,37 @@ def test_global_shap_importance_returns_none_when_the_file_is_missing(tmp_path):
 
 def test_fairness_per_sensor_sorts_worst_first(results_dir):
     fairness = fairness_per_sensor(results_dir, model="random_forest")
-    assert list(fairness["site"]) == ["Orangi Pilot Project", "Climate Action Center"]
+    assert list(fairness["Site"]) == ["Orangi Pilot Project", "Climate Action Center"]
 
 
 def test_fairness_per_sensor_returns_none_when_missing(tmp_path):
     assert fairness_per_sensor(tmp_path, model="random_forest") is None
+
+
+def test_fairness_per_sensor_shows_band_rates_as_percentages(tmp_path):
+    folder = tmp_path / "fairness" / "ensemble"
+    folder.mkdir(parents=True)
+    folder.joinpath("per_sensor.csv").write_text(
+        "site,n,mae,mean_pm25,miss_rate,false_alarm_rate\nA,10,4.04,30.0,0.2,0.05\n", encoding="utf-8"
+    )
+    row = fairness_per_sensor(tmp_path).iloc[0]
+    assert row["Missed bad days (%)"] == 20
+    assert row["False alarms (%)"] == 5
+    assert row["Average error (µg/m³)"] == 4.0
+
+
+def test_numpy_vs_pytorch_note_reads_the_saved_summary(tmp_path):
+    folder = tmp_path / "numpy_vs_torch"
+    folder.mkdir()
+    folder.joinpath("summary.json").write_text(
+        '{"prediction_diff": {"n_rows": 442, "max_abs": 1.4e-14}, '
+        '"weight_max_abs_diff": {"a": 1e-16, "b": 3e-17}, '
+        '"epochs": {"numpy_best_epoch": 17}, "fit_seconds": {"numpy": 2.7, "torch": 14.1}}',
+        encoding="utf-8",
+    )
+    note = numpy_vs_pytorch_note(tmp_path)
+    assert "442" in note and "1.4e-14" in note and "1.0e-16" in note and "epoch (17)" in note
+
+
+def test_numpy_vs_pytorch_note_explains_how_to_create_it_when_missing(tmp_path):
+    assert "src.models.torch_nn" in numpy_vs_pytorch_note(tmp_path)

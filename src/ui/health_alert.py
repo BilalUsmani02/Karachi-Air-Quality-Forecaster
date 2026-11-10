@@ -42,7 +42,7 @@ def site_health_alert(band_index: int, band_name: str, site: str) -> HealthAlert
         return None
     level = "error" if band_index >= UNHEALTHY_BAND_INDEX else "warning"
     message = (
-        f"Health alert: air quality is forecast to be {band_name} at {site} today. "
+        f"Health alert: air quality is forecast to be {band_name} at {site}. "
         f"{INFORMATIONAL_ONLY}"
     )
     return HealthAlert(level=level, message=message)

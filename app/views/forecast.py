@@ -68,7 +68,7 @@ def render() -> None:
         st.rerun()
 
     st.divider()
-    offline_map = _render_offline_map_toggle(snapshot)
+    offline_map = _render_offline_map_toggle()
     selected_id = _render_sensor_picker(summaries, offline_map)
     if selected_id is None:
         st.warning("No forecasts are available in this snapshot.")
@@ -169,17 +169,16 @@ def _render_demo_day_picker(bundle) -> date | None:
     return days[keys.index(chosen_key)]
 
 
-def _render_offline_map_toggle(snapshot) -> bool:
+def _render_offline_map_toggle() -> bool:
     """The "Offline map" sidebar toggle; its default comes from `src.ui.map_mode`.
 
-    The tile-host socket probe only runs once per session, and only when actually needed (a
-    "live" snapshot) — a non-live snapshot already defaults to the tile-free style regardless.
+    The tile-host socket probe (2 s at most) runs once per session, whatever the data source.
     """
     probe = st.session_state.get("_tiles_reachable")
-    if probe is None and snapshot.source == "live":
+    if probe is None:
         probe = tiles_reachable()
         st.session_state["_tiles_reachable"] = probe
-    default = default_offline_map(snapshot.source, probe)
+    default = default_offline_map(probe)
     return st.sidebar.checkbox("Offline map (no background tiles)", value=default, key="offline_map")
 
 

@@ -12,19 +12,13 @@ OFFLINE_STYLE = "white-bg"  # a tile-free plotly map style — always renders, o
 ONLINE_STYLE = "open-street-map"
 
 
-def default_offline_map(source: str, tiles_reachable: bool | None) -> bool:
-    """True to default the "offline map" toggle on.
+def default_offline_map(tiles_reachable: bool | None) -> bool:
+    """True to default the "offline map" toggle on: only when the tile probe failed.
 
-    A snapshot that isn't "live" (cache or demo) already means today's forecast likely came
-    from a fallback path with no guarantee of a live connection, so default to the safe,
-    tile-free style without needing the probe. For a live snapshot, trust the cheap socket
-    probe when one was run (`tiles_reachable` is `None` only if it wasn't).
+    The data source is no guide — the app normally loads from the cache even with internet —
+    so the default follows the once-per-session socket probe; no probe result means online.
     """
-    if source != "live":
-        return True
-    if tiles_reachable is None:
-        return False
-    return not tiles_reachable
+    return tiles_reachable is False
 
 
 def map_style(offline: bool) -> str:

@@ -25,7 +25,7 @@ UNSELECTED_SIZE = 12
 
 TILE_HOST = "tile.openstreetmap.org"
 TILE_PORT = 443
-PROBE_TIMEOUT_SECONDS = 1.0
+PROBE_TIMEOUT_SECONDS = 2.0
 
 
 def tiles_reachable(
@@ -68,6 +68,7 @@ def build_map_figure(
             marker=dict(size=sizes, color=[s.color for s in summaries]),
             text=site_labels if offline else None,
             textposition="top center",
+            textfont=dict(size=12, color="#222222"),
             hovertext=texts,
             hoverinfo="text",
             customdata=[s.sensor_id for s in summaries],
@@ -77,7 +78,7 @@ def build_map_figure(
         map=dict(
             style=map_style(offline),
             center=dict(lat=sum(s.lat for s in summaries) / len(summaries), lon=sum(s.lon for s in summaries) / len(summaries)),
-            zoom=9.5,
+            zoom=10.3 if offline else 9.5,
         ),
         margin=dict(l=0, r=0, t=0, b=0),
         showlegend=False,
