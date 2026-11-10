@@ -36,11 +36,11 @@ Short run-through for the morning of a demo or viva.
 ## If someone asks to see the internals
 
 - **From-scratch network + gradient check:**
-  `uv run pytest tests/test_numpy_nn_layers.py -v` runs the gradient-check tests (the NumPy
-  network's analytic gradients checked against numerical ones) and prints each one as it
-  passes. `uv run pytest tests/test_torch_nn.py -v` shows the NumPy network training
-  identically to its PyTorch twin from the same initial weights (same loss, matching
-  predictions).
+  `uv run python -m src.models.numpy_nn.gradcheck` prints the relative error of every analytic
+  gradient against a numerical one (worst ~1e-9; anything below 1e-6 passes).
+- **NumPy vs PyTorch on real data:** `uv run python -m src.models.torch_nn` trains both networks
+  from the same weights (~20 s) and prints the differences (predictions ~1e-14 µg/m³). The saved
+  result and loss-curve figure are in `results/numpy_vs_torch/` if there is no time to rerun.
 - **Expert-system trace:**
   `uv run python -m src.expert --pm25 85 --today 60 --sensitive --outdoor` prints the advice
   for a sample forecast plus which rules fired and why (vary `--pm25`, `--today`,
