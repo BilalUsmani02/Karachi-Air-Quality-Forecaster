@@ -10,6 +10,7 @@ Row sets:
 - **Final test (1 Sep - 8 Nov 2026)**: 442 sensor-days over 69 dates.
 
 Selection rule (best first): fewest missed Unhealthy-or-worse days, then accuracy, then macro-F1.
+Chosen by the rule in code (`selection.json`): `ensemble` (decided by rule2_accuracy).
 Best direct classifier: CV = `hist_gb_clf`; final test = `random_forest_clf`
 (the only direct classifier scored on the final test).
 

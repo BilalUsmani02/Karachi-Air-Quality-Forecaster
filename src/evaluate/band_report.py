@@ -17,13 +17,15 @@ and the official baselines (Ridge -> band for regression, logistic regression fo
 classification; logistic regression was not run on the final test, so it appears in CV only).
 
 Writes `results/bands/`: `metrics.csv`, `per_class.csv`, `bootstrap_ci.csv`,
-`confusion_counts.csv`, `confusion_recall.csv`, `confusion_cv.png`, `confusion_final_test.png`
-and `summary.md`.
+`confusion_counts.csv`, `confusion_recall.csv`, `confusion_cv.png`, `confusion_final_test.png`,
+`summary.md` and `selection.json` (the model-selection rule applied in code by
+`selection.select_model` on the pooled-CV rows, with the reason for each rule step).
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 
 import matplotlib
@@ -35,6 +37,7 @@ import pandas as pd
 
 from src.config import RESULTS_DIR, SEED
 from src.evaluate import band_stats as bs
+from src.evaluate import selection as sel
 from src.evaluate.ensemble_cv import KEY_COLUMNS, TUNING_DIR, cv_predictions_path, load_ensemble_cv
 from src.evaluate.final_test import BAND_NAMES
 from src.evaluate.run_cv import _to_band
@@ -57,6 +60,8 @@ DISPLAY = {
     "random_forest_clf": "Random Forest classifier (direct)",
     "logistic_regression": "Logistic regression (direct, baseline)",
 }
+# Regress-then-band routes that enter the selection rule (rule 0 decides which are eligible).
+SELECTION_REGRESSORS: tuple[str, ...] = ("ensemble", "persistence", "ridge", *ELIGIBLE_REGRESSORS)
 SET_TITLES = {
     "cv": "Pooled CV (8 folds, 1 Jan - 28 Aug 2026)",
     "final_test": "Final test (1 Sep - 8 Nov 2026)",
@@ -94,6 +99,24 @@ def load_cv_bands(tuning_dir: Path = TUNING_DIR) -> pd.DataFrame:
         table = table.drop(columns=f"true_{name}")
     band_cols = [c for c in table.columns if c.startswith("band_")]
     return table.astype({c: np.int64 for c in band_cols})
+
+
+def load_cv_mae(tuning_dir: Path = TUNING_DIR) -> dict[str, float]:
+    """Pooled-CV MAE of every regress-then-band route, from the saved CV prediction files.
+
+    Single regressors: mean |y_pred - y_true| of `<name>_cv_predictions.parquet`. Ensemble: the
+    same on `load_ensemble_cv`. Persistence: its saved `persistence` column. These equal the
+    MAEs saved in `results/tuning/*_best.json` and `ensemble_cv_metrics.json`.
+    """
+    ens = load_ensemble_cv(tuning_dir)
+    mae = {
+        "ensemble": float(np.mean(np.abs(ens["y_pred"] - ens["y_true"]))),
+        "persistence": float(np.mean(np.abs(ens["persistence"] - ens["y_true"]))),
+    }
+    for name in ("ridge", *ELIGIBLE_REGRESSORS):
+        reg = pd.read_parquet(cv_predictions_path(tuning_dir, name))
+        mae[name] = float(np.mean(np.abs(reg["y_pred"] - reg["y_true"])))
+    return mae
 
 
 def load_final_bands(path: Path = FINAL_PREDICTIONS) -> pd.DataFrame:
@@ -157,6 +180,46 @@ def confusion_long(table: pd.DataFrame, set_name: str, models: list[str]) -> tup
         recalls.append(r.reset_index().assign(set=set_name, model=m))
     cols = ["set", "model", "true", *BAND_NAMES]
     return pd.concat(counts, ignore_index=True)[cols], pd.concat(recalls, ignore_index=True)[cols]
+
+
+def run_selection(cv: pd.DataFrame, cv_metrics: pd.DataFrame, cv_mae: dict, n_boot: int, seed: int) -> dict:
+    """Apply the selection rule (`selection.select_model`) to the pooled-CV rows.
+
+    Rule 1 needs the miss-rate difference between the leader and every other eligible route, so
+    those pairs are bootstrapped here (same date-block method, seed and resample count as
+    `bootstrap_ci.csv`). Returns the decision plus the inputs it used, ready for JSON.
+    """
+    regressors = [m for m in SELECTION_REGRESSORS if m in cv_mae]
+    candidates = sel.candidates_table(cv_metrics, cv_mae, regressors, DIRECT_CLASSIFIERS)
+    eligible = candidates.loc[candidates["model"].isin(sel.apply_rule0(candidates)["eligible"])]
+    leader = sel.miss_rate_leader(eligible)
+    diffs = bs.date_block_bootstrap(
+        cv,
+        {m: f"band_{m}" for m in eligible["model"]},
+        pairs=[(m, leader) for m in eligible["model"] if m != leader],
+        n_boot=n_boot,
+        seed=seed,
+    )
+    decision = sel.select_model(candidates, diffs)
+    return {
+        "row_set": SET_TITLES["cv"],
+        "n_boot": n_boot,
+        "seed": seed,
+        **decision,
+        "candidates": candidates.to_dict(orient="records"),
+    }
+
+
+def _json_safe(value: object) -> object:
+    if isinstance(value, dict):
+        return {str(k): _json_safe(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_safe(v) for v in value]
+    if isinstance(value, (float, np.floating)):
+        return None if np.isnan(value) else float(value)
+    if isinstance(value, (np.integer, np.bool_)):
+        return value.item()
+    return value
 
 
 # --- Figure --------------------------------------------------------------------------------
@@ -234,6 +297,11 @@ def write_summary(results: dict, out_dir: Path, n_boot: int) -> None:
     lines += [
         "",
         "Selection rule (best first): fewest missed Unhealthy-or-worse days, then accuracy, then macro-F1.",
+        *(
+            [f"Chosen by the rule in code (`selection.json`): `{results['selection']['chosen']}`"
+             f" (decided by {results['selection']['decided_by']})."]
+            if "selection" in results else []
+        ),
         f"Best direct classifier: CV = `{results['best']['cv']}`; final test = `{results['best']['final_test']}`",
         "(the only direct classifier scored on the final test).",
         "",
@@ -269,9 +337,18 @@ def write_summary(results: dict, out_dir: Path, n_boot: int) -> None:
 
 
 def build_report(
-    cv: pd.DataFrame, final: pd.DataFrame, out_dir: Path = OUT_DIR, n_boot: int = 1000, seed: int = SEED
+    cv: pd.DataFrame,
+    final: pd.DataFrame,
+    out_dir: Path = OUT_DIR,
+    n_boot: int = 1000,
+    seed: int = SEED,
+    cv_mae: dict[str, float] | None = None,
 ) -> dict:
-    """Compute every table, CI and figure for both row sets and write them to `out_dir`."""
+    """Compute every table, CI and figure for both row sets and write them to `out_dir`.
+
+    With `cv_mae` (from `load_cv_mae`), the selection rule is also applied on the pooled-CV
+    rows and written to `selection.json`.
+    """
     out_dir.mkdir(parents=True, exist_ok=True)
     sets = {"cv": cv, "final_test": final}
     metrics = pd.concat([metrics_table(t, s) for s, t in sets.items()], ignore_index=True)
@@ -310,6 +387,10 @@ def build_report(
     results["confusion_counts"].to_csv(out_dir / "confusion_counts.csv", index=False)
     results["confusion_recall"].to_csv(out_dir / "confusion_recall.csv", index=False)
     results["ci"].to_csv(out_dir / "bootstrap_ci.csv", index=False)
+    if cv_mae is not None:
+        results["selection"] = run_selection(cv, metrics.loc[metrics["set"] == "cv"], cv_mae, n_boot, seed)
+        text = json.dumps(_json_safe(results["selection"]), indent=2)
+        (out_dir / "selection.json").write_text(text + "\n", encoding="utf-8")
     write_summary(results, out_dir, n_boot)
     return results
 
@@ -322,7 +403,13 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--n-boot", default=2000, type=int)
     args = parser.parse_args(argv)
 
-    build_report(load_cv_bands(args.tuning_dir), load_final_bands(args.final_predictions), args.out_dir, args.n_boot)
+    build_report(
+        load_cv_bands(args.tuning_dir),
+        load_final_bands(args.final_predictions),
+        args.out_dir,
+        args.n_boot,
+        cv_mae=load_cv_mae(args.tuning_dir),
+    )
     print(f"Wrote band report to {args.out_dir}")
 
 
