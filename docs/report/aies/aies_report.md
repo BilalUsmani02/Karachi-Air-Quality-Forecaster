@@ -1,7 +1,10 @@
 ---
 title: "Karachi Air-Quality Forecaster: Day-Ahead AQI Band Classification with a Rule-Based Expert System for Explainable Health Advice"
 subtitle: "AIES CCP (CT-361) — Technical Report"
-author: "Group members: [to be added]"
+author:
+  - "M. Bilal Usmani (CT-24071)"
+  - "Syed Hamza Ali (CT-24089)"
+  - "Syed Faham (CT-24069)"
 date: "November 2026"
 ---
 

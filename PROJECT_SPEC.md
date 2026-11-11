@@ -483,8 +483,9 @@ Filled in at the end of the project (decided 21 Oct 2026). Groups may differ bet
 
 | Member | Roll no. | Course(s) | Owns |
 |---|---|---|---|
-| Bilal | TBD | PAI, AIES, AIES Lab | TBD |
-| TBD | | | |
+| M. Bilal Usmani | CT-24071 | PAI, AIES, AIES Lab | TBD |
+| Syed Hamza Ali | CT-24089 | PAI, AIES, AIES Lab | TBD |
+| Syed Faham | CT-24069 | PAI, AIES, AIES Lab | TBD |
 
 ---
 
