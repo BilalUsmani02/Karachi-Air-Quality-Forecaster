@@ -321,6 +321,33 @@ monsoon validation block had zero Unhealthy days (spec §5.3).
 - [ ] Each member can demo and explain any part
 
 **Notes:**
+- **Pre-report review (10 Nov 2026):** three independent reviewers (AIES, Lab, PAI) found 11 gaps;
+  all fixed (confusion matrices + bootstrap CIs, ensemble fairness, NumPy-vs-PyTorch CLI, maths
+  chapter, health alerts, wording, pipeline diagram, demo mode, stale warning, offline map, demo kit).
+- **Selection rule** made explicit (rule 0 eligibility within ~10% MAE; rule 1 counts a miss-rate gap
+  only if its bootstrap CI excludes zero). The ensemble wins it.
+- **Reports** drafted, fact-checked line by line and corrected: AIES ~21 pages, PAI ~20 pages.
+- **Full re-verification (10–11 Nov 2026):** 791 tests pass, coverage 98.3%.
+  - AIES examiner: est. **9.5–10 / 10**; 62 numbers checked, 0 mismatches.
+  - PAI examiner: est. **A band (85–90%)**; ~75 numbers checked, 2 rounding slips; no equation mismatches.
+  - Lab examiner: live-demo dry run (cache, demo mode, site switch, all pages) with no exceptions;
+    offline fallbacks verified; README/checklist commands verified.
+  - Fresh-clone check: did not finish (the agent lost its network connection) — **rerun**.
+- **Open items from the re-verification:**
+  - Bilal: group member names + roll numbers (both reports, spec §11.1); read both reports.
+  - PAI report: network trains on ~3,047 rows (538 most recent rows held out for early stopping) —
+    say so; 0.33→0.32 and 0.13→0.12; save the four-model average and 0.97 correlation to `results/`;
+    one sentence on why the overview's 9 sensors became 14; "(unless `--force`)".
+  - AIES report: say the selection rule is applied by hand (or implement it in `band_report`);
+    soften "the chain is genuine" (§6.3); add untuned baselines; drop other-course legend from Fig 1
+    and draw expert system and SHAP as parallel consumers; note SHAP examples and the demo day are
+    in-sample for the production model.
+  - App: reset the site picker when demo mode is turned off; show dates without `00:00:00` on About.
+  - Demo: warn not to press Refresh on shaky Wi-Fi (a hanging refresh can spin ~5 min); fix the
+    checklist's "no internet" claim for a USB rebuild; `make_demo_kit.py` needs `--help`/dry run;
+    gradcheck should not rewrite the tracked CSV during a viva; 1e-6 vs 1e-8 wording.
+  - README "Reproduce everything": add gradcheck, `torch_nn`, `ensemble_cv`, `band_report`, fairness;
+    how a marker can run the app without an API key (demo kit).
 
 ---
 
