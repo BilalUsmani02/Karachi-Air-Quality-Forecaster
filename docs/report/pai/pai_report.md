@@ -54,7 +54,7 @@ Every promise in the proposal was built and tested; Appendix A maps each one to 
 | D3 | Open-Meteo Air Quality API (CAMS) | Hourly modelled PM2.5, PM10, NO₂, dust, aerosol optical depth | Modelled-pollution features | 186,816 |
 | D4 | US EPA AQI guidance and WHO 2021 guidelines | Band breakpoints and health advice text | Bands and advice rules | 22 rules |
 
-All three time-series sources are licensed CC BY 4.0 and were downloaded on 8 November 2026. Each download is recorded in a manifest with its endpoint, coordinates and row count. Fourteen sensors have at least 150 complete days. Typically seven to nine report on a given day (eight on average), because several sites have long gaps. Weather and CAMS data start a month before the sensors, so that features that look back in time exist from the first day.
+All three time-series sources are licensed CC BY 4.0 and were downloaded on 8 November 2026. Each download is recorded in a manifest with its endpoint, coordinates and row count. Fourteen sensors have at least 150 complete days. The proposal's overview named 9 sensors, the set visible through the sensor network's live-reading feed at the time; querying the full historical archive later turned up 14 Urban Unit sensors in Karachi with enough history to use, so the project covers all 14. Typically seven to nine report on a given day (eight on average), because several sites have long gaps. Weather and CAMS data start a month before the sensors, so that features that look back in time exist from the first day.
 
 The sensors agree closely: daily means correlate between 0.911 and 0.992 across pairs. CAMS returns one value for the whole city, so it acts as a city-wide signal. Daily PM2.5 falls on warmer (r = −0.652) and windier (r = −0.627) days, mostly because the monsoon is warm, windy and clean.
 
@@ -91,7 +91,7 @@ After cleaning, the feature table holds 4,027 labelled sensor-days.
 Rows are split by date, never at random, and all sensors share the same cut dates (`src/data/split.py::project_splits`).
 
 - **Cross-validation (CV):** eight rolling-origin folds (Tashman, 2000). In each fold the model learns from all days up to one day before a 30-day block and is then scored on that block; the skipped day keeps training and test rows apart. The blocks run from 1 January to 28 August 2026, so they cover winter smog, the spring transition and the monsoon. Pooled together, the eight test blocks hold 1,458 sensor-days over 240 dates. Every model setting was chosen on these folds.
-- **Final test:** 1 September to 8 November 2026, 442 sensor-days over 69 dates. Each model was trained on all 3,585 labelled rows before 1 September and scored once, after every choice had been frozen. The script `src/evaluate/final_test.py` refuses to run a second time.
+- **Final test:** 1 September to 8 November 2026, 442 sensor-days over 69 dates. Each model was trained on all 3,585 labelled rows before 1 September and scored once, after every choice had been frozen. The script `src/evaluate/final_test.py` refuses to run a second time (unless `--force`).
 
 A single summer validation block was considered and rejected: June to August 2026 contained no Unhealthy days at all, so it could not show how a model behaves in smog.
 
@@ -264,7 +264,7 @@ All randomness comes from one seed (42). It is split into three independent stre
 
 ## Early stopping on time-ordered validation
 
-Inside each training run, the last 15% of the training rows, in date order, are held back for validation. After each epoch (one pass over the training rows) the validation loss is measured. If it has not improved for 20 epochs, training stops and the weights from the best epoch are restored (`estimator_base.py`, `BaseMLPRegressor.fit`).
+Inside each training run, the last 15% of the training rows, in date order, are held back for validation (`estimator_base.py`, `BaseMLPRegressor._split`). In the production run on all 3,585 labelled rows before 1 September 2026, that splits off the most recent 538 rows for validation, leaving 3,047 rows for the gradient updates (`results/numpy_vs_torch/summary.json`, which records both the row count and the 0.15 validation fraction for that run). After each epoch (one pass over the training rows) the validation loss is measured. If it has not improved for 20 epochs, training stops and the weights from the best epoch are restored (`estimator_base.py`, `BaseMLPRegressor.fit`).
 
 The held-back rows are the *latest* ones, not a random 15%. Neighbouring days are strongly correlated, because smog spells last for days and the lag features overlap. A random hold-out would put near-copies of training days into validation, make the validation loss look too good, and stop training too late. Holding out the most recent block copies the real task: learn from the past and judge on the future.
 
@@ -378,7 +378,7 @@ Per fold, the network beat persistence on six of the eight folds. It lost narrow
 
 ## Seed stability
 
-A network's result depends partly on its random starting weights. Re-running the chosen configuration with seeds 0, 1 and 2 gave CV MAEs of 6.57, 6.63 and 6.70 µg/m³. The spread of 0.13 µg/m³ is small next to the gaps between model families, so the ranking in the next section does not depend on a lucky seed.
+A network's result depends partly on its random starting weights. Re-running the chosen configuration with seeds 0, 1 and 2 gave CV MAEs of 6.57, 6.63 and 6.70 µg/m³. The spread of 0.12 µg/m³ is small next to the gaps between model families, so the ranking in the next section does not depend on a lucky seed.
 
 # Comparison with standard machine-learning models
 
@@ -411,7 +411,7 @@ Pooled over the 1,458 sensor-days of the eight folds:
 
 The ensemble's row is the average of the Gradient Boosting and NumPy network CV predictions on the same rows, scored with the same metric code (`results/tuning/ensemble_cv_metrics.json`).
 
-Tuning took the network from the worst model to third among the single models, just behind Random Forest and Gradient Boosting. Its MAE is 0.33 µg/m³ behind Gradient Boosting, 0.09 behind Random Forest, and well ahead of Ridge and persistence.
+Tuning took the network from the worst model to third among the single models, just behind Random Forest and Gradient Boosting. Its MAE is 0.32 µg/m³ behind Gradient Boosting, 0.09 behind Random Forest, and well ahead of Ridge and persistence.
 
 ## The ensemble
 
@@ -424,7 +424,7 @@ The NumPy network and Gradient Boosting make different mistakes: the correlation
 | Gradient Boosting alone | 6.30 | +27.5% |
 | NumPy network alone | 6.63 | +23.8% |
 
-The two-model ensemble was chosen. It is within 0.03 µg/m³ of the four-model average, simpler, has the best band scores of any combination (below), and keeps the from-scratch network in the final system. The weights are equal on purpose: fitting weights on the same folds used to judge them would overfit those folds.
+The four-model row and the 0.97 correlation above are not among the saved tuning outputs used elsewhere in this section; both are recomputed from the same saved per-model predictions by `src/evaluate/ensemble_diagnostics.py` and written to `results/tuning/ensemble_diagnostics.json`. The two-model ensemble was chosen. It is within 0.03 µg/m³ of the four-model average, simpler, has the best band scores of any combination (below), and keeps the from-scratch network in the final system. The weights are equal on purpose: fitting weights on the same folds used to judge them would overfit those folds.
 
 ## Final test
 
@@ -443,7 +443,7 @@ The ranking from CV holds, except that the NumPy network moves ahead of Random F
 
 ## Air-quality bands, briefly
 
-The app also sorts each forecast into a US EPA band (US EPA, 2024): Good (up to 9.0 µg/m³), Moderate (to 35.4), Unhealthy for Sensitive Groups (USG, to 55.4), Unhealthy (to 125.4) and Very Unhealthy (above; no Hazardous day occurred, so Hazardous is merged into Very Unhealthy). This is the main task of the companion AIES report, so only the headline is given here (`results/bands/summary.md`).
+The app also sorts each forecast into a US EPA band (US EPA, 2024): Good (up to 9.0 µg/m³), Moderate (to 35.4), Unhealthy for Sensitive Groups (USG, to 55.4), Unhealthy (to 125.4) and Very Unhealthy (above; no Hazardous day occurred, so Hazardous is merged into Very Unhealthy). This is the main task of the companion AIES report, so only the headline is given here (`results/bands/metrics.csv`).
 
 On pooled CV, banding the ensemble's forecast puts 82.6% of sensor-days in the right band, with a macro-F1 (F1 averaged over the five bands) of 0.674. It misses 8.0% of truly Unhealthy-or-worse days, against 18.0% for persistence. The 95% bootstrap interval for that difference, resampling whole dates, is −17.4 to −3.5 percentage points, so the gain is not noise. The NumPy network alone gets 80.7% accuracy and macro-F1 0.659. On the final test the ensemble reached 84.6% accuracy and missed 13 of 88 Unhealthy days (14.8%), against 20 for persistence. That final-test gap lies within noise because the period is only 69 days long. The weak spot is the rare extremes: averaging pulls extreme forecasts towards the middle, so the ensemble catches only 16% of the 25 Very Unhealthy days in CV.
 
@@ -485,7 +485,7 @@ The two explainers agree on the top factors but not on their order. `TreeExplain
 
 ## A forecast explained
 
-Sensor S11 (Orangi Pilot Project) on 20 December 2025, a winter smog day (`results/explain/example_explanations.md`):
+Sensor S11 (Orangi Pilot Project) on 20 December 2025, a winter smog day:
 
 | | µg/m³ |
 |---|---|
@@ -546,7 +546,7 @@ Every model follows the same small contract: `fit(X, y)` and `predict(X)` on a 6
 
 ## Testing
 
-The test suite (`tests/`, pytest) has **791 tests** (`uv run pytest --collect-only -q`) and covers **98%** of the lines in `src/`. A test run fails if coverage drops below 80% (`fail_under = 80` in `pyproject.toml`). The network tests are the most relevant here:
+The test suite (`tests/`, pytest) has **798 tests** (`uv run pytest --collect-only -q`) and covers **98%** of the lines in `src/`. A test run fails if coverage drops below 80% (`fail_under = 80` in `pyproject.toml`). The network tests are the most relevant here:
 
 - `test_numpy_nn_layers.py` checks each layer's and each loss's gradient numerically, and checks that a broken gradient is detected.
 - `test_numpy_nn_regressor.py` checks training, early stopping, weight restoring, input validation and that the network never changes the caller's arrays.
@@ -559,7 +559,7 @@ For example, `uv run pytest -q --no-cov tests/test_numpy_nn_layers.py tests/test
 
 - **Environment:** `uv` with a lockfile (`uv.lock`) pins every package version. The saved comparison ran on Python 3.12.13, NumPy 2.5.4 and PyTorch 2.14.1 (CPU).
 - **Randomness:** one seed (42) in `src/config.py`. The network splits it into independent streams, so the same command gives the same weights.
-- **Commands:** each result file is written by a single command (see the appendix). The final test refuses to run twice, so its score cannot be quietly improved.
+- **Commands:** each result file is written by a single command (see the appendix). The final test refuses to run twice (unless `--force`), so its score cannot be quietly improved.
 - **Data:** raw downloads are never edited; manifests record their source and date.
 
 # Limitations and future work
@@ -628,8 +628,8 @@ World Health Organization (2021). *WHO global air quality guidelines: particulat
 | Using historical air-quality and weather data | `src/data/download_*.py`, `clean.py`, `features.py` | `data/raw/*/manifest.json` | 2 |
 | Neural network built from scratch in NumPy | `src/models/numpy_nn/` (layers, losses, optimizers, init, network, estimator_base, variant) | `results/tuning/mlp_numpy_best.json` | 3, 5 |
 | Applying linear algebra and calculus to show how it learns | `layers.py`, `losses.py`, `optimizers.py`, `gradcheck.py` | `results/numpy_vs_torch/gradcheck.csv`, `learning_curve.png` | 3, 4.1, 5.1 |
-| Validated against PyTorch | `src/models/torch_nn/` | `results/numpy_vs_torch/summary.md`, `summary.json`, `loss_curves.png` | 4.2 |
-| Compared with standard machine-learning models | `src/models/baselines/`, `src/evaluate/` | `results/baselines_summary.md`, `results/tuning/classical_summary.md`, `results/final_test/` | 6 |
+| Validated against PyTorch | `src/models/torch_nn/` | `results/numpy_vs_torch/summary.json`, `loss_curves.png` | 4.2 |
+| Compared with standard machine-learning models | `src/models/baselines/`, `src/evaluate/` | `results/baselines_cv_pooled.csv`, `results/tuning/`, `results/final_test/` | 6 |
 | Explainable AI on the main factors behind each prediction | `src/explain/` | `results/explain/` | 7 |
 | Streamlit dashboard with forecasts | `app/`, `src/ui/` | screenshots in Section 8 | 8 |
 | Health alerts (informational, not official) | `src/ui/health_alert.py`, `src/expert/` | `tests/test_ui_health_alert.py`, `tests/test_expert_*.py` | 8 |
