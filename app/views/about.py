@@ -8,6 +8,7 @@ from __future__ import annotations
 import streamlit as st
 
 from app.state import get_bundle, missing_bundle_message
+from src.ui.format import format_day
 
 
 def render() -> None:
@@ -27,7 +28,7 @@ def render() -> None:
     else:
         trained_on = tuple(bundle.get("trained_on") or ())
         start, end = (trained_on + ("", ""))[:2]
-        st.write(f"Trained on data from **{start}** to **{end}**.")
+        st.write(f"Trained on data from **{format_day(start)}** to **{format_day(end)}**.")
         st.caption(
             "It predicts with an equal-weight average of a tuned Gradient Boosting model and "
             "a neural network written from scratch in NumPy — see the Model comparison page."

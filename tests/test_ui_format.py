@@ -62,3 +62,13 @@ def test_is_missing():
     assert fmt.is_missing(float("nan"))
     assert not fmt.is_missing(0.0)
     assert not fmt.is_missing(12.3)
+
+
+def test_format_day_drops_the_midnight_time():
+    assert fmt.format_day("2026-11-08 00:00:00") == "8 November 2026"
+    assert fmt.format_day("2025-06-20") == "20 June 2025"
+
+
+def test_format_day_handles_empty_and_garbage_input():
+    assert fmt.format_day("") == ""
+    assert fmt.format_day("not a date") == "not a date"

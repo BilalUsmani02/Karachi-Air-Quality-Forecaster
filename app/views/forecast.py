@@ -142,11 +142,15 @@ def _sync_demo_mode(bundle, demo_mode: bool) -> None:
     was_demo = st.session_state.get("_was_demo", False)
     if demo_mode and not was_demo:
         st.session_state["_pre_demo_snapshot"] = st.session_state["snapshot"]
+        st.session_state["_pre_demo_sensor"] = st.session_state.get("selected_sensor")
     if demo_mode:
         day = _render_demo_day_picker(bundle)
         st.session_state["snapshot"] = _cached_demo_snapshot(bundle, day)
     elif was_demo:
         st.session_state["snapshot"] = st.session_state.pop("_pre_demo_snapshot", st.session_state["snapshot"])
+        # The site picked during the demo may have no forecast in the real snapshot, so go
+        # back to the site picked before the demo; the picker re-validates it.
+        st.session_state["selected_sensor"] = st.session_state.pop("_pre_demo_sensor", None)
     st.session_state["_was_demo"] = demo_mode
 
 

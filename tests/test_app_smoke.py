@@ -193,7 +193,7 @@ def _run_about_page():
     import app.state as state
     import app.views.about as about
 
-    state.get_bundle = lambda: {"trained_on": ["2025-06-20", "2026-11-08"]}  # type: ignore[assignment]
+    state.get_bundle = lambda: {"trained_on": ["2025-06-20 00:00:00", "2026-11-08 00:00:00"]}  # type: ignore[assignment]
     about.get_bundle = state.get_bundle
 
     about.render()
@@ -266,6 +266,26 @@ def test_demo_mode_toggle_switches_the_page_to_a_demo_snapshot():
     assert "Cached data" in info_restored
 
 
+def test_turning_demo_mode_off_restores_the_site_picked_before_the_demo():
+    at = AppTest.from_function(_run_forecast_page_for_the_demo_toggle, default_timeout=60)
+    at.run()
+    at.selectbox(key="selected_sensor").select("S1")
+    at.run()
+
+    at.sidebar.checkbox(key="demo_mode").check()
+    at.run()
+    at.selectbox(key="selected_sensor").select("S5")
+    at.run()
+    assert at.session_state["selected_sensor"] == "S5"
+
+    at.sidebar.checkbox(key="demo_mode").uncheck()
+    at.run()
+
+    assert not at.exception
+    assert at.session_state["selected_sensor"] == "S1"
+    assert at.selectbox(key="selected_sensor").value == "S1"
+
+
 def test_compare_page_renders_without_error_and_shows_key_text():
     at = AppTest.from_function(_run_compare_page, default_timeout=60)
     at.run()
@@ -284,4 +304,5 @@ def test_about_page_renders_without_error_and_shows_the_disclaimer():
     assert not at.exception
     info_text = " ".join(i.value for i in at.info)
     assert "not" in info_text.lower() and "medical advice" in info_text.lower()
-    assert "2025-06-20" in " ".join(m.value for m in at.markdown)
+    about_text = " ".join(m.value for m in at.markdown)
+    assert "20 June 2025" in about_text and "00:00:00" not in about_text

@@ -31,6 +31,20 @@ def format_date_long(day: date) -> str:
     return f"{ts.day_name()}, {ts.day} {ts.month_name()} {ts.year}"
 
 
+def format_day(value: str) -> str:
+    """A stored date or midnight timestamp ("2026-11-08 00:00:00") as "8 November 2026".
+
+    Falls back to the raw string if it cannot be parsed, and to "" for an empty value.
+    """
+    if not value:
+        return ""
+    try:
+        ts = pd.Timestamp(value)
+    except (ValueError, TypeError):
+        return str(value)
+    return f"{ts.day} {ts.month_name()} {ts.year}"
+
+
 def format_pkt_timestamp(iso_timestamp: str) -> str:
     """An ISO-8601 timestamp (any timezone, usually UTC) as a readable PKT time.
 
