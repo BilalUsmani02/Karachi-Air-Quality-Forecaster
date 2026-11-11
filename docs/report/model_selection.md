@@ -28,6 +28,12 @@ from the saved predictions by `python -m src.evaluate.band_report`, no retrainin
 The regressors were first tuned, and the ensemble's members picked, on MAE; the band routes were
 then compared with this rule.
 
+**The rule is applied in code.** `src/evaluate/selection.py` (`select_model`) takes the saved CV
+metrics and the bootstrap differences and returns the chosen route with a reason for each step.
+`python -m src.evaluate.band_report --n-boot 2000` writes the decision to
+`results/bands/selection.json`. For rule 1 it bootstraps the miss-rate difference between the
+leader (the eligible route with the fewest misses) and every other eligible route.
+
 **Official baselines:** Ridge regression (regression, then banded) and logistic regression
 (direct band classification). Persistence (the day's average = the previous day's average) is the
 naive yardstick every model must beat.
@@ -65,8 +71,11 @@ difference). If the interval of a difference contains 0, the gap is within noise
 | Persistence | 8.70 | — | — |
 | Ridge (official baseline) | 7.68 | 7.22 | alpha 150 |
 | Random Forest | 6.79 | 6.54 | 500 trees, depth 15, min leaf 5, 50% of features per split |
-| Gradient Boosting | — | **6.30** | 100 rounds, 31 leaves, L2 0.1 |
+| Gradient Boosting | 6.45* | **6.30** | 100 rounds, 31 leaves, L2 0.1 |
 | NumPy network | 11.21 | 6.63 | 32 hidden units, L2 0.1, change-from-previous-day target, no calendar features |
+
+\*Not in the Phase 3 baseline run; this is the first point of its tuning search, which uses
+scikit-learn's default settings (`results/tuning/hist_gb_trials.csv`).
 
 **Why the untuned network was so bad, and what fixed it** (`results/tuning/mlp_numpy_diagnosis.csv`):
 
@@ -148,9 +157,14 @@ With 95% intervals (`results/bands/bootstrap_ci.csv`):
   (13.0%; ensemble − network −5.0 points [−9.4, −1.7]). All intervals are in
   `results/bands/bootstrap_ci.csv` (`python -m src.evaluate.band_report --n-boot 2000`).
 
-**Chosen:** predict PM2.5 with the ensemble, then look up its band. Among the eligible routes
-(rule 0) and the direct classifiers, none misses clearly fewer Unhealthy-or-worse days (rule 1),
-and the ensemble is the most accurate (rule 2). Its weak spot is the rare extremes: it recognises only 57% of Good
+**Chosen:** predict PM2.5 with the ensemble, then look up its band (`results/bands/selection.json`).
+Rule 0 drops persistence (MAE +41%) and Ridge (+17%). Random Forest → band misses the fewest bad
+days (6.2%), so rule 1 compares every other eligible route with it: the NumPy network → band
+(+6.8 points [+2.2, +13.0]), the Gradient Boosting classifier (+3.8 [+0.9, +7.4]), the Random
+Forest classifier (+8.8 [+4.2, +14.3]) and logistic regression (+17.7 [+8.4, +28.0]) miss clearly
+more and are ruled out; the ensemble (+1.8 [−1.3, +5.0]) and Gradient Boosting → band
+(+0.9 [−3.3, +4.5]) stay in. On rule 2 the ensemble is the most accurate of the three (82.6% vs
+80.7% and 79.6%). Its weak spot is the rare extremes: it recognises only 57% of Good
 days and 16% of the 25 Very Unhealthy days, because averaging models pulls extreme forecasts
 toward the middle.
 

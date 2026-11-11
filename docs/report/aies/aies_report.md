@@ -179,9 +179,9 @@ We did not resample (for example by oversampling rare days). With time-series da
 
 ## Pipeline
 
-Figure 1 shows the whole pipeline. Data from the five sources is cleaned, turned into one row per sensor-day, and split by time. Models are trained and tuned on rolling folds, and the chosen ensemble's forecast is turned into a band. The expert system and SHAP explainer then work on that band and forecast, and the Streamlit app shows the result. A live, cached or demo snapshot feeds the app each time it runs.
+Figure 1 shows the whole pipeline. Data from the five sources is cleaned, turned into one row per sensor-day, and split by time. Models are trained and tuned on rolling folds, and the chosen ensemble's forecast is turned into a band. Two components then use that output side by side, independently of each other: the expert system turns the band into advice, and the SHAP explainer breaks the forecast down into its main causes. The Streamlit app shows both. A live, cached or demo snapshot feeds the app each time it runs.
 
-![Figure 1. End-to-end pipeline. Orange boxes are the parts this course emphasises: band classification, the expert system and the SHAP reasons.](docs/report/figures/pipeline.png){width=100%}
+![Figure 1. End-to-end pipeline. Orange boxes are band classification and its two parallel consumers, the expert system and the SHAP explanations.](docs/report/figures/pipeline.png){width=100%}
 
 ## Evaluation design
 
@@ -218,7 +218,7 @@ On top of the baselines we tried four model families, each for a clear reason:
 
 - **Random Forest** (regression and direct classifier): an average of many decision trees, each grown on a bootstrap sample [12][16]. It handles non-linear effects such as "low wind *and* low mixing height" without hand-made interaction terms.
 - **Gradient Boosting** (scikit-learn's histogram-based version, regression and direct classifier): trees added one at a time, each correcting the previous ones' errors. Usually the strongest model family on tabular data.
-- **A neural network written from scratch in NumPy** [15]: one hidden layer of 32 ReLU units, trained with the Adam optimiser [17], L2 penalty and early stopping. We wrote the forward pass and backpropagation by hand. A numerical gradient check across 36 parameter blocks gave a largest relative error of 7.8 × 10⁻¹⁰, and an identical PyTorch [14] copy started from the same weights matched its predictions to within 1.4 × 10⁻¹⁴ µg/m³. The network is one approach among several here; its derivation is in the project's PAI report.
+- **A neural network written from scratch in NumPy** [15]: one hidden layer of 32 ReLU units, trained with the Adam optimiser [17], L2 penalty and early stopping. We wrote the forward pass and backpropagation by hand. A numerical gradient check across 36 parameter blocks gave a largest relative error of 7.8 × 10⁻¹⁰, and an identical PyTorch [14] copy started from the same weights matched its predictions to within 1.4 × 10⁻¹⁴ µg/m³. The network is one approach among several here; its code is in `src/models/numpy_nn/`.
 - **Direct classifiers** (logistic regression, Random Forest, Gradient Boosting) that predict the band without a number.
 
 ## Tuning
@@ -230,10 +230,26 @@ Each family was tuned on the pooled CV folds with a staged search: a coarse scan
 | Persistence | 8.70 | — | — |
 | Ridge | 7.68 | 7.22 | alpha 150 |
 | Random Forest | 6.79 | 6.54 | 500 trees, depth 15, min leaf 5, half the features per split |
-| Gradient Boosting | — | 6.30 | 100 rounds, 31 leaves, L2 0.1 |
+| Gradient Boosting | 6.45* | 6.30 | 100 rounds, 31 leaves, L2 0.1 |
 | NumPy network | 11.21 | 6.63 | 32 units, L2 0.1, predicts change from previous day, no calendar features |
 
-: Table 5. Tuning results, pooled CV (1,458 sensor-days), MAE in µg/m³.
+: Table 5. Tuning results, pooled CV (1,458 sensor-days), MAE in µg/m³. Defaults come from the baseline run (`results/baselines_cv_pooled.csv`). \*Gradient Boosting was not in the baseline run; its default is the first point of the search, which uses scikit-learn's default settings (learning rate 0.1, 31 leaves, 100 rounds, no L2 penalty; `results/tuning/hist_gb_trials.csv`).
+
+Tuning lowered the MAE of every regressor, but the gain was modest except for the network: 0.46 µg/m³ for Ridge, 0.25 for Random Forest and 0.15 for Gradient Boosting. Table 6 shows what tuning did to the band scores, on the same rows.
+
+| Route | Accuracy, default | Accuracy, tuned | Macro-F1, default | Macro-F1, tuned |
+|---|---|---|---|---|
+| Logistic regression (direct) | 67.6% | 73.1% | 0.509 | 0.589 |
+| Random Forest classifier (direct) | 79.4% | 78.3% | 0.578 | 0.651 |
+| Gradient Boosting classifier (direct)\* | 81.8% | 82.0% | 0.643 | 0.664 |
+| Ridge → band | 79.6% | 79.6% | 0.657 | 0.582 |
+| Random Forest → band | 79.1% | 79.6% | 0.598 | 0.609 |
+| Gradient Boosting → band\* | not saved | 80.7% | 0.628 | 0.645 |
+| NumPy network → band | 67.0% | 80.7% | 0.504 | 0.659 |
+
+: Table 6. Band results before and after tuning, pooled CV (1,458 sensor-days). Defaults from `results/baselines_cv_pooled.csv`; \*Gradient Boosting defaults from the first search point in `results/tuning/hist_gb_trials.csv` and `hist_gb_clf_trials.csv` (the regressor's search saved only its macro-F1). Tuned values from `results/bands/metrics.csv`.
+
+Tuning bought the most for the network (13.7 points of accuracy) and for the macro-F1 of the direct classifiers, which were tuned on that measure (+0.080 for logistic regression, +0.074 for the Random Forest classifier). For Gradient Boosting the defaults were already close to the tuned result. Ridge is the exception: tuning it for MAE lowered its band macro-F1 (Section 7.1).
 
 The untuned network was worse than persistence. Two causes stood out. First, the data starts in June 2025, so the spring folds tested calendar dates the network had never seen; it read them as winter and over-forecast by 21.9 µg/m³ on average in one fold. Dropping the three calendar features cut that bias to −2.5. Second, it overfitted: on the first five folds its training error was about 3–6 µg/m³ while its held-out error was 15–18. A smaller network with a heavier weight penalty, trained to predict the *change* from a simple previous-day line, fixed most of this. The result was stable across random seeds (MAE 6.57, 6.63 and 6.70).
 
@@ -249,6 +265,8 @@ We wrote the rule down before comparing band routes, in priority order:
 1. **Fewest missed Unhealthy-or-worse days.** A missed bad day costs more than a false alarm: people who should have stayed indoors do not. A route is ruled out only if it misses *clearly* more, meaning the bootstrap interval of the difference excludes zero.
 2. **Then accuracy.**
 3. **Then macro-F1.**
+
+The rule is applied in code, not by hand. `src/evaluate/selection.py` takes the saved CV metrics and the bootstrap differences and returns the chosen route with the reason for each step. Running `src/evaluate/band_report.py` saves that decision to `results/bands/selection.json`. For rule 1 it compares every eligible route with the one that misses the fewest bad days, using the same date-block bootstrap (2,000 resamples, seed 42).
 
 This is the decision we, as designers, had to make: macro-F1 is the textbook measure for imbalanced classes, but for a health tool the cost of errors is not symmetric. Section 7 shows where this choice matters.
 
@@ -271,7 +289,7 @@ Two safeguards shaped the acquisition. Advice is **quoted or closely paraphrased
 
 Each rule is a frozen data record, not a function: an ID, a list of conditions, a kind, the advice text, a severity from 1 to 5, a source and a "because" sentence. Each condition is a plain `(fact, operator, value)` triple. Keeping rules as data rather than code is what lets the explanation facility print exactly what was checked.
 
-The 22 rules fall into four groups. R01–R17 are candidates for the single main piece of advice, covering every combination of band, sensitive status and outdoor plans. R18–R20 add notes when the trend is rising or falling. R21 is a meta-rule that applies the safety margin. R22 attaches the disclaimer to every answer. Table 6 shows a representative selection.
+The 22 rules fall into four groups. R01–R17 are candidates for the single main piece of advice, covering every combination of band, sensitive status and outdoor plans. R18–R20 add notes when the trend is rising or falling. R21 is a meta-rule that applies the safety margin. R22 attaches the disclaimer to every answer. Table 7 shows a representative selection.
 
 | ID | IF | THEN | Severity | Source |
 |---|---|---|---|---|
@@ -286,7 +304,7 @@ The 22 rules fall into four groups. R01–R17 are candidates for the single main
 | R21 | 1 ≤ band ≤ 4, distance to next band ≤ 5 µg/m³ | meta: advice band = band + 1 | 5 | safeguard |
 | R22 | always | append the disclaimer | — | safeguard |
 
-: Table 6. Representative rules from the 22-rule base.
+: Table 7. Representative rules from the 22-rule base.
 
 The working facts are the forecast PM2.5, the previous day's PM2.5 (optional, for the trend), and the two profile booleans. The band is computed from the forecast with the EPA table.
 
@@ -303,9 +321,9 @@ Here is the real trace for a forecast of 33.0 µg/m³ after a day at 25.0 µg/m�
 | 2 | R06, R07, R18 | candidate advice from R06 and R07; trend note from R18 |
 | 3 | none | fixpoint reached, loop stops |
 
-: Table 7. Forward-chaining trace for forecast 33.0, previous day 25.0, sensitive, outdoor plans.
+: Table 8. Forward-chaining trace for forecast 33.0, previous day 25.0, sensitive, outdoor plans.
 
-The chain is genuine: R01–R20 condition on the *advice band*, which does not exist until R21 has been evaluated in round 1. When R21 does not match, the engine sets the advice band equal to the band and continues. A cap of ten rounds guards against a rule base that never settles; this one always settles in three.
+The chaining is shallow. There is one step in which a rule's conclusion lets other rules fire: R21 derives the advice band in round 1, and R01–R20, which all condition on the advice band, can only fire in round 2. When R21 does not match, no rule derives the advice band; the engine sets it equal to the band itself, so in that case round 2 rests on an engine default rather than on another rule's conclusion. The engine therefore uses a real forward-chaining loop, but over a rule base only two levels deep. A cap of ten rounds guards against a rule base that never settles; this one always stops by round three.
 
 ## Conflict resolution
 
@@ -347,7 +365,7 @@ The app shows the same trace in an expandable panel under the advice card.
 
 ## Band classification on cross-validation
 
-Table 8 compares every route to the band on the pooled CV folds. All five bands occur in these rows, so macro-F1 is over five classes.
+Table 9 compares every route to the band on the pooled CV folds. All five bands occur in these rows, so macro-F1 is over five classes.
 
 | Route | Accuracy | Macro-F1 | Good recall | VU recall | Missed U-or-worse | False alarms |
 |---|---|---|---|---|---|---|
@@ -361,9 +379,9 @@ Table 8 compares every route to the band on the pooled CV folds. All five bands 
 | NumPy network → band | 80.7% | 0.659 | 52.3% | 20.0% | 13.0% | 4.7% |
 | **Ensemble (GB + NumPy) → band** | **82.6%** | 0.674 | 56.9% | 16.0% | 8.0% | 5.6% |
 
-: Table 8. Band results, pooled CV (1,458 sensor-days, 240 dates). VU = Very Unhealthy; U-or-worse = Unhealthy or Very Unhealthy.
+: Table 9. Band results, pooled CV (1,458 sensor-days, 240 dates). VU = Very Unhealthy; U-or-worse = Unhealthy or Very Unhealthy.
 
-Table 9 gives the bootstrap intervals for the chosen ensemble and its differences from the main competitors.
+Table 10 gives the bootstrap intervals for the chosen ensemble and its differences from the main competitors.
 
 | Comparison | Accuracy | Macro-F1 | Missed U-or-worse | False alarms |
 |---|---|---|---|---|
@@ -376,9 +394,9 @@ Table 9 gives the bootstrap intervals for the chosen ensemble and its difference
 | Ensemble − GB → band | **+0.019 [+0.006, +0.034]** | +0.029 [−0.022, +0.061] | +0.009 [−0.013, +0.030] | −0.010 [−0.026, +0.009] |
 | Ensemble − NumPy → band | **+0.019 [+0.002, +0.038]** | +0.015 [−0.030, +0.074] | **−0.050 [−0.094, −0.017]** | +0.009 [0.000, +0.019] |
 
-: Table 9. Ensemble and paired differences with 95% date-block bootstrap intervals, pooled CV. Bold differences exclude zero.
+: Table 10. Ensemble and paired differences with 95% date-block bootstrap intervals, pooled CV. Bold differences exclude zero.
 
-**Applying the selection rule.** Among eligible regress-then-band routes and the direct classifiers, rule 1 rules out persistence, logistic regression and the NumPy network alone, because each misses clearly more bad days than the ensemble does (Table 9; the network by 5.0 points). The Random Forest classifier misses nearly twice as many bad days as the ensemble (15.0% against 8.0%) and is also less accurate, so it loses on either rule (no paired interval was computed for this pair). Random Forest → band and Gradient Boosting → band miss slightly fewer bad days than the ensemble, but those gaps sit within noise, so rule 1 cannot separate them. On rule 2 the ensemble is clearly more accurate than both. The Gradient Boosting classifier is within noise of the ensemble on every measure; the ensemble wins on rule 2 by a small margin (82.6% against 82.0%). So the production route is the ensemble, then the band.
+**Applying the selection rule.** The code in `src/evaluate/selection.py` makes the choice, and `results/bands/selection.json` records each step. Rule 0 removes persistence (MAE 41% above the best) and Ridge → band (17% above). Among the routes left, Random Forest → band misses the fewest bad days (6.2%), so every other route is compared with it. Rule 1 then rules out the NumPy network → band (+6.8 points [+2.2, +13.0]), the Gradient Boosting classifier (+3.8 [+0.9, +7.4]), the Random Forest classifier (+8.8 [+4.2, +14.3]) and logistic regression (+17.7 [+8.4, +28.0]), because each misses clearly more bad days. The ensemble (+1.8 [−1.3, +5.0]) and Gradient Boosting → band (+0.9 [−3.3, +4.5]) stay in, since their gaps are within noise. On rule 2 the ensemble is the most accurate of the three survivors (82.6% against 80.7% and 79.6%), so rule 3 is not needed. The production route is the ensemble, then the band. The Gradient Boosting classifier is close to the ensemble on every measure in Table 10, but it fails rule 1 against the miss-rate leader.
 
 **Baseline to improvement.** Against the official classification baseline (logistic regression), the ensemble is clearly better on every health measure: 9.5 points more accurate, 0.085 higher macro-F1, and it misses 15.9 points fewer bad days. Against the official regression baseline (Ridge → band), it is more accurate, has a 0.091 higher macro-F1 and 3.0 points fewer false alarms. Ridge does miss fewer bad days (5.6% against 8.0%), but it gets there by calling "Unhealthy" too often: it never forecasts Very Unhealthy and flags 8.7% of cleaner days. It also fails rule 0, with an MAE 17% worse. Rule 0 is what removes Ridge, and Ridge is the only route that misses clearly fewer bad days than the ensemble (+0.024 [+0.003, +0.050]). We think that exclusion is justified: Ridge buys its lower miss rate with a 17% worse MAE, more false alarms and no Very Unhealthy forecasts at all, so it is a cruder forecaster leaning towards the worse band rather than a better one.
 
@@ -402,7 +420,7 @@ Figure 2 shows where the errors fall. Almost all of the ensemble's errors are on
 | Unhealthy | 314 | 0.774 | 0.914 | 0.838 |
 | Very Unhealthy | 25 | 1.000 | 0.160 | 0.276 |
 
-: Table 10. Per-class results for the ensemble, pooled CV.
+: Table 11. Per-class results for the ensemble, pooled CV.
 
 The ensemble is strong on the two biggest and most important classes: it catches 91.4% of Unhealthy days and 92.3% of Moderate days. Its two weak spots are the extremes. It finds only 57% of Good days, and only 4 of the 25 Very Unhealthy days (16%). When it does call a day Very Unhealthy, it is right every time (precision 1.000), but it says so rarely. USG is the hardest middle band, because it is narrow (20 µg/m³ wide) and sits between two large classes.
 
@@ -420,7 +438,7 @@ The final test covers 1 September to 8 November 2026 and was scored once. This p
 | NumPy network → band | 83.0% | 0.485 | 0.606 | 15.9% | 4.0% |
 | **Ensemble → band** | **84.6%** | 0.495 | 0.618 | **14.8%** | 4.0% |
 
-: Table 11. Band results on the final test (442 sensor-days, 69 dates).
+: Table 12. Band results on the final test (442 sensor-days, 69 dates).
 
 The ensemble's accuracy is 0.846 [0.786, 0.898], and against persistence it gains +0.029 [−0.005, +0.065] in accuracy and misses 8.0 points fewer bad days (−0.080 [−0.182, +0.014]; 13 of 88 against persistence's 20). So the CV ranking holds in direction: the ensemble again misses the fewest bad days (tied with Ridge) and ties for best accuracy. But the test is short, and none of these gaps is outside the noise on its own.
 
@@ -432,7 +450,7 @@ Because the final test has only one Good day and no Very Unhealthy days, the per
 
 ## Regression results
 
-The regression step drives the chosen route, so its accuracy matters too. Table 12 gives the final-test errors.
+The regression step drives the chosen route, so its accuracy matters too. Table 13 gives the final-test errors.
 
 | Model | MAE | RMSE | R² | Skill vs persistence |
 |---|---|---|---|---|
@@ -443,7 +461,7 @@ The regression step drives the chosen route, so its accuracy matters too. Table 
 | NumPy network | 4.98 | 6.97 | 0.846 | +14.5% |
 | **Ensemble (GB + NumPy)** | **4.63** | **6.61** | **0.861** | **+20.5%** |
 
-: Table 12. Regression results on the final test, µg/m³.
+: Table 13. Regression results on the final test, µg/m³.
 
 The ensemble's MAE is 17% lower than the Ridge baseline's on the final test (4.63 against 5.60), and 15% lower on CV (6.16 against 7.22). Errors are smaller in the final test than in CV because September to November is cleaner than January to August, so there is less to miss by.
 
@@ -468,7 +486,7 @@ The production model is an average of a tree model and a neural network, so no s
 | 7 | Forecast-day east-west wind | 1.3 | Which way pollution is blown |
 | 8 | Forecast-day wind speed | 1.2 | Calm air traps pollution |
 
-: Table 13. Top global factors, ensemble explainer (`results/explain/global_importance.csv`).
+: Table 14. Top global factors, ensemble explainer (`results/explain/global_importance.csv`).
 
 **Agreement with domain knowledge.** Two patterns stand out, and both match atmospheric science. First, persistence dominates: recent PM2.5 outweighs all the weather features combined, which is also why persistence is such a hard baseline. Second, weather works at the margin. Wind, the CAMS forecast and the mixing height (mean |SHAP| 1.1 µg/m³) are what move a forecast away from "same as yesterday". Calm wind and a low mixing height trap pollution near the ground; rain washes it out. As a cross-check we also ran the exact tree explainer on the Gradient Boosting member alone over all 4,027 rows. It agreed on the top two features (in swapped order) and placed both CAMS features in its top six.
 
@@ -485,9 +503,11 @@ For sensor S11 (Orangi Pilot Project) on 20 December 2025, a winter smog day, th
 | The last three days averaged 120.7 | +6.9 |
 | Yesterday's PM2.5 swung a lot (std 63.9) | −6.6 |
 
-: Table 14. SHAP explanation for S11 on 20 December 2025.
+: Table 15. SHAP explanation for S11 on 20 December 2025.
 
 On a clean monsoon day (S2, 10 September 2025, forecast 5.0 µg/m³), the top reasons were a low previous-day mean (−17.5) and 86 mm of rain the day before (−6.6). The base value plus all contributions matched the model's output to within about 10⁻¹³ µg/m³. The app shows the top three reasons in this plain-English form.
+
+**These example days are in-sample.** The production model was retrained on all labelled rows, June 2025 to November 2026, so both example days above were part of its training data. The same holds for the demo day the app shows offline (Section 9.2). These examples illustrate what an explanation looks like; they say nothing about how accurate the forecast is. Accuracy comes only from the held-out CV blocks and the final test (Section 7).
 
 **Limits.** Correlated features share credit: on a smoggy day, three PM2.5 history features all rise together and SHAP splits the credit among them. SHAP explains the model, not the atmosphere: a large value for wind means the forecast moved because wind changed, not proof that wind caused the pollution.
 
@@ -517,7 +537,7 @@ The brief notes that real-time monitoring depends on the network. The app is bui
 
 1. **Live:** the "Refresh live data" button fetches the latest sensor readings from OpenAQ and the weather and CAMS forecasts from Open-Meteo, builds features for today and forecasts every site. Requests retry on failure. A full refresh takes about 2–3 minutes because OpenAQ limits the request rate.
 2. **Cache:** each successful live snapshot is saved. If a refresh fails, the app shows the last saved forecast and a warning that names the failure and the snapshot's time. If the cached forecast is for an earlier day, a stale-data warning says so.
-3. **Demo:** with no cache at all, or when the user switches on "Demo mode", the app forecasts a stored historical day from the processed data, fully offline. Demo mode always shows a warning.
+3. **Demo:** with no cache at all, or when the user switches on "Demo mode", the app forecasts a stored historical day from the processed data, fully offline. Demo mode always shows a warning. Demo days come from the same labelled history the production model was retrained on, so a demo forecast shows how the app works, not how well it forecasts.
 
 Sites with no recent data are listed as "no forecast today" rather than given a guessed value. An "Offline map" toggle draws the map without background tiles; it switches on by default when a quick connection test to the tile server fails. If the trained model file is missing, the app shows the command to build it instead of crashing.
 
@@ -600,13 +620,13 @@ Future work, in order of value:
 | Brief requirement | Report section | Code / evidence |
 |---|---|---|
 | CLO 2: AI techniques for a classification problem | 2.4, 5, 7 | `src/classify/bands.py`, `src/evaluate/band_report.py`, `results/bands/` |
-| CP2 depth of analysis: abstract models, no obvious solution | 2.4, 5.8, 7.1 | `docs/report/model_selection.md`, `results/bands/bootstrap_ci.csv` |
+| CP2 depth of analysis: abstract models, no obvious solution | 2.4, 5.8, 7.1 | `src/evaluate/selection.py`, `results/bands/selection.json`, `results/bands/bootstrap_ci.csv` |
 | CP3 depth of knowledge: domain and computing principles | 2.1, 4.3, 6 | `src/expert/`, `src/data/features.py` |
 | Real-world problem in an allowed domain | 1.1, 2.1 | — |
 | Clear title | Title page | — |
 | Problem statement: issue, impact, AI/ES approach | 1.1 | — |
 | Problem description: domain, use case, goals | 1.2, 2 | — |
-| At least two datasets / knowledge sources, described | 3.1 | `src/data/download_*.py`, `data/raw/*/manifest.json`, `docs/report/knowledge_sources.md` |
+| At least two datasets / knowledge sources, described | 3.1 | `src/data/download_*.py`, `data/raw/*/manifest.json`, `src/expert/rules.py` |
 | How datasets build and evaluate the system; metrics | 3.1, 5.2, 5.3 | `src/data/split.py`, `src/evaluate/metrics.py` |
 | Noise, missing values, inconsistencies | 4.1, 4.2 | `src/data/clean.py`, `data/processed/build_report.json` |
 | Class imbalance (Lab brief) | 4.5 | `src/classify/bands.py`, `src/evaluate/tune_classical.py` |
@@ -614,13 +634,13 @@ Future work, in order of value:
 | External factors | 3.4, 11 | `src/data/download_weather.py`, `src/data/download_air_quality.py` |
 | Data privacy | 10.1 | `src/expert/facts.py`, `app/views/forecast.py` |
 | Fairness, transparency, accountability | 8, 10 | `src/evaluate/fairness.py`, `src/explain/`, `src/expert/explain.py`, `results/fairness/ensemble/` |
-| Baseline model | 5.4, 7.1 | `src/models/baselines/`, `results/baselines_summary.md` |
+| Baseline model | 5.4, 7.1 | `src/models/baselines/`, `results/baselines_cv_pooled.csv` |
 | Improvement with multiple AI approaches (tuning, ensembling) | 5.5 – 5.7, 7 | `src/models/`, `src/evaluate/tune_classical.py`, `src/evaluate/tune_mlp.py`, `src/models/ensemble.py`, `src/models/final.py` |
 | Expert-system techniques | 6 | `src/expert/rules.py`, `src/expert/engine.py`, `src/expert/explain.py` |
 | Network availability for real-time monitoring | 9.2 | `src/live/pipeline.py`, `src/live/snapshot.py`, `src/ui/banner.py`, `src/ui/map_mode.py` |
 | Deliverable: Python code (pre-processing to improvement) | 5, Appendix B | `src/`, `tests/` |
 | Deliverable: user-friendly visualisation / interface | 9 | `app/`, `src/ui/` |
-| Deliverable: technical report of at least 10 pages | this document | `docs/report/aies/aies_report.md` |
+| Deliverable: technical report of at least 10 pages | this document | — |
 | Methodology with diagram | 5.1 | `docs/report/figures/pipeline.png`, `docs/report/figures/make_pipeline.py` |
 | Models used | 5.4 – 5.8 | `src/models/final.py` |
 | Results | 7, 8 | `results/bands/`, `results/final_test/`, `results/explain/` |
