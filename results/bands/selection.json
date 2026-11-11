@@ -1,0 +1,171 @@
+{
+  "row_set": "Pooled CV (8 folds, 1 Jan - 28 Aug 2026)",
+  "n_boot": 2000,
+  "seed": 42,
+  "chosen": "ensemble",
+  "decided_by": "rule2_accuracy",
+  "steps": {
+    "rule0_eligibility": {
+      "best_mae": 6.162407763246259,
+      "mae_tolerance": 0.1,
+      "mae_ceiling": 6.778648539570885,
+      "eligible": [
+        "ensemble",
+        "hist_gb",
+        "random_forest",
+        "mlp_numpy",
+        "hist_gb_clf",
+        "random_forest_clf",
+        "logistic_regression"
+      ],
+      "excluded": {
+        "persistence": {
+          "cv_mae": 8.699325768808096,
+          "above_best_pct": 41.16764263300598
+        },
+        "ridge": {
+          "cv_mae": 7.217384088406617,
+          "above_best_pct": 17.119547516028266
+        }
+      },
+      "direct_skip_rule0": [
+        "hist_gb_clf",
+        "random_forest_clf",
+        "logistic_regression"
+      ],
+      "reason": "Regress-then-band routes need a CV MAE within 10% of the best (6.16, ceiling 6.78). Excluded: persistence, ridge. Direct classifiers skip this rule."
+    },
+    "rule1_missed_bad_days": {
+      "leader": "random_forest",
+      "comparisons": {
+        "ensemble": {
+          "point": 0.017699115044247787,
+          "ci_low": -0.013378598904301198,
+          "ci_high": 0.049645390070921974,
+          "ruled_out": false
+        },
+        "hist_gb": {
+          "point": 0.008849557522123894,
+          "ci_low": -0.03297193877551021,
+          "ci_high": 0.04458817606759033,
+          "ruled_out": false
+        },
+        "mlp_numpy": {
+          "point": 0.06784660766961652,
+          "ci_low": 0.022009139150943404,
+          "ci_high": 0.13043851785447483,
+          "ruled_out": true
+        },
+        "hist_gb_clf": {
+          "point": 0.038348082595870206,
+          "ci_low": 0.009433962264150941,
+          "ci_high": 0.07447205462051443,
+          "ruled_out": true
+        },
+        "random_forest_clf": {
+          "point": 0.08849557522123895,
+          "ci_low": 0.042252035419266656,
+          "ci_high": 0.14285714285714285,
+          "ruled_out": true
+        },
+        "logistic_regression": {
+          "point": 0.17699115044247787,
+          "ci_low": 0.08449962935507783,
+          "ci_high": 0.2801558417319895,
+          "ruled_out": true
+        }
+      },
+      "survivors": [
+        "ensemble",
+        "hist_gb",
+        "random_forest"
+      ],
+      "reason": "Leader on missed Unhealthy-or-worse days: random_forest. Ruled out (95% CI of the difference above zero): mlp_numpy, hist_gb_clf, random_forest_clf, logistic_regression."
+    },
+    "rule2_accuracy": {
+      "accuracy": {
+        "ensemble": 0.8264746227709191,
+        "hist_gb": 0.8072702331961591,
+        "random_forest": 0.7956104252400549
+      },
+      "best": [
+        "ensemble"
+      ],
+      "reason": "Highest accuracy among ensemble, hist_gb, random_forest: ensemble."
+    }
+  },
+  "candidates": [
+    {
+      "model": "ensemble",
+      "kind": "regress_then_band",
+      "cv_mae": 6.162407763246259,
+      "miss_rate": 0.07964601769911504,
+      "accuracy": 0.8264746227709191,
+      "macro_f1_all": 0.6736132206514147
+    },
+    {
+      "model": "persistence",
+      "kind": "regress_then_band",
+      "cv_mae": 8.699325768808096,
+      "miss_rate": 0.17994100294985252,
+      "accuracy": 0.7887517146776406,
+      "macro_f1_all": 0.6780256509873961
+    },
+    {
+      "model": "ridge",
+      "kind": "regress_then_band",
+      "cv_mae": 7.217384088406617,
+      "miss_rate": 0.05604719764011799,
+      "accuracy": 0.7956104252400549,
+      "macro_f1_all": 0.582157448089541
+    },
+    {
+      "model": "hist_gb",
+      "kind": "regress_then_band",
+      "cv_mae": 6.303055197814907,
+      "miss_rate": 0.07079646017699115,
+      "accuracy": 0.8072702331961591,
+      "macro_f1_all": 0.6449357479783026
+    },
+    {
+      "model": "random_forest",
+      "kind": "regress_then_band",
+      "cv_mae": 6.5400880014945315,
+      "miss_rate": 0.061946902654867256,
+      "accuracy": 0.7956104252400549,
+      "macro_f1_all": 0.60867702138334
+    },
+    {
+      "model": "mlp_numpy",
+      "kind": "regress_then_band",
+      "cv_mae": 6.626492289588903,
+      "miss_rate": 0.12979351032448377,
+      "accuracy": 0.8072702331961591,
+      "macro_f1_all": 0.6588366394932295
+    },
+    {
+      "model": "hist_gb_clf",
+      "kind": "direct",
+      "cv_mae": null,
+      "miss_rate": 0.10029498525073746,
+      "accuracy": 0.8196159122085048,
+      "macro_f1_all": 0.6644516771382961
+    },
+    {
+      "model": "random_forest_clf",
+      "kind": "direct",
+      "cv_mae": null,
+      "miss_rate": 0.1504424778761062,
+      "accuracy": 0.7832647462277091,
+      "macro_f1_all": 0.6514345046161805
+    },
+    {
+      "model": "logistic_regression",
+      "kind": "direct",
+      "cv_mae": null,
+      "miss_rate": 0.23893805309734514,
+      "accuracy": 0.7311385459533608,
+      "macro_f1_all": 0.588994359753381
+    }
+  ]
+}
