@@ -312,7 +312,7 @@ monsoon validation block had zero Unhealthy days (spec §5.3).
 - [x] Traceability table (spec §3): every row points to real code / section (report appendices)
 - [x] Coverage ≥80% on `src/` (98%; `fail_under = 80` enforced)
 - [ ] Viva prep for every member: inputs/outputs, why each model over alternatives, real-life use
-- [ ] Fill group members + ownership in spec §11.1
+- [x] Fill group members in spec §11.1 and both reports (ownership column still TBD)
 - [ ] Slides (if required)
 - [ ] Final tidy: README, requirements pinned, results reproducible
 
@@ -334,15 +334,13 @@ monsoon validation block had zero Unhealthy days (spec §5.3).
     offline fallbacks verified; README/checklist commands verified.
   - Fresh-clone check: did not finish (the agent lost its network connection) — **rerun**.
 - **Open items from the re-verification:**
-  - Bilal: group member names + roll numbers (both reports, spec §11.1); read both reports.
-  - PAI report: network trains on ~3,047 rows (538 most recent rows held out for early stopping) —
-    say so; 0.33→0.32 and 0.13→0.12; save the four-model average and 0.97 correlation to `results/`;
-    one sentence on why the overview's 9 sensors became 14; "(unless `--force`)".
-  - AIES report: say the selection rule is applied by hand (or implement it in `band_report`);
-    soften "the chain is genuine" (§6.3); add untuned baselines; drop other-course legend from Fig 1
-    and draw expert system and SHAP as parallel consumers; note SHAP examples and the demo day are
-    in-sample for the production model.
-  - App: reset the site picker when demo mode is turned off; show dates without `00:00:00` on About.
+  - ~~Group names, PAI report items, AIES report items, app items~~ — **done 11 Nov 2026**:
+    names in both reports + spec; selection rule now applied in code (`src/evaluate/selection.py` →
+    `results/bands/selection.json`, still picks the ensemble); four-model average + correlation saved
+    (`results/tuning/ensemble_diagnostics.json`); Fig 1 redrawn; untuned baselines table; no AI or
+    `.md` references in either report; demo-off restores the pre-demo site; plain dates on About.
+    819 tests pass, coverage 98.3%; app checked in the browser.
+  - Bilal: read both reports; fill the ownership column in spec §11.1.
   - Demo: warn not to press Refresh on shaky Wi-Fi (a hanging refresh can spin ~5 min); fix the
     checklist's "no internet" claim for a USB rebuild; `make_demo_kit.py` needs `--help`/dry run;
     gradcheck should not rewrite the tracked CSV during a viva; 1e-6 vs 1e-8 wording.
