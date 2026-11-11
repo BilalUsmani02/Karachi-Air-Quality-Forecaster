@@ -546,7 +546,7 @@ Every model follows the same small contract: `fit(X, y)` and `predict(X)` on a 6
 
 ## Testing
 
-The test suite (`tests/`, pytest) has **798 tests** (`uv run pytest --collect-only -q`) and covers **98%** of the lines in `src/`. A test run fails if coverage drops below 80% (`fail_under = 80` in `pyproject.toml`). The network tests are the most relevant here:
+The test suite (`tests/`, pytest) has **819 tests** (`uv run pytest --collect-only -q`) and covers **98%** of the lines in `src/`. A test run fails if coverage drops below 80% (`fail_under = 80` in `pyproject.toml`). The network tests are the most relevant here:
 
 - `test_numpy_nn_layers.py` checks each layer's and each loss's gradient numerically, and checks that a broken gradient is detected.
 - `test_numpy_nn_regressor.py` checks training, early stopping, weight restoring, input validation and that the network never changes the caller's arrays.
