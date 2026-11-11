@@ -1,0 +1,23 @@
+{
+  "four_model_average": {
+    "members": [
+      "ridge",
+      "random_forest",
+      "hist_gb",
+      "mlp_numpy"
+    ],
+    "n_rows": 1458,
+    "mae": 6.133294342119394,
+    "rmse": 9.46272400037861,
+    "r2": 0.8958557072563037,
+    "skill": 0.2949690004585581
+  },
+  "member_correlation": {
+    "pair": [
+      "hist_gb",
+      "mlp_numpy"
+    ],
+    "pearson_r": 0.967376383259345
+  },
+  "how": "src.evaluate.ensemble_diagnostics: four_model_average_metrics averages the ridge, random_forest, hist_gb and mlp_numpy pooled-CV predictions (src.evaluate.ensemble_cv.load_ensemble_cv) and scores them with src.evaluate.metrics.regression_metrics; member_correlation is the Pearson correlation between the hist_gb and mlp_numpy pooled-CV predictions, from the same saved files."
+}
