@@ -53,8 +53,9 @@ Every promise in the proposal was built and tested; Appendix A maps each one to 
 | D2 | Open-Meteo Historical Weather API (ERA5 reanalysis; Hersbach et al., 2020) | Hourly temperature, humidity, dew point, pressure, rain, wind, boundary-layer height | Weather features | 186,816 |
 | D3 | Open-Meteo Air Quality API (CAMS) | Hourly modelled PM2.5, PM10, NO₂, dust, aerosol optical depth | Modelled-pollution features | 186,816 |
 | D4 | US EPA AQI guidance and WHO 2021 guidelines | Band breakpoints and health advice text | Bands and advice rules | 22 rules |
+| D5 | US Consulate Karachi reference monitor, via OpenAQ | Hourly PM2.5, May 2019 to Mar 2025 | Context only (seasonal pattern); not used for training, because it ends before the sensors start | 46,937 |
 
-All three time-series sources are licensed CC BY 4.0 and were downloaded on 8 November 2026. Each download is recorded in a manifest with its endpoint, coordinates and row count. Fourteen sensors have at least 150 complete days. The proposal's overview named 9 sensors, the set visible through the sensor network's live-reading feed at the time; querying the full historical archive later turned up 14 Urban Unit sensors in Karachi with enough history to use, so the project covers all 14. Typically seven to nine report on a given day (eight on average), because several sites have long gaps. Weather and CAMS data start a month before the sensors, so that features that look back in time exist from the first day.
+All three time-series sources are licensed CC BY 4.0 and were downloaded on 8 November 2026. Each download is recorded in a manifest with its endpoint, coordinates and row count. Fourteen sensors have at least 150 complete days. The proposal's overview named 9 sensors, the set visible through the sensor network's live-reading feed at the time; querying the full historical archive later turned up 14 Urban Unit sensors in Karachi with enough history to use, so the project covers all 14. Usually six to eleven have a labelled day on any given date (eight on average), because several sites have long gaps. Weather and CAMS data start a month before the sensors, so that features that look back in time exist from the first day.
 
 The sensors agree closely: daily means correlate between 0.911 and 0.992 across pairs. CAMS returns one value for the whole city, so it acts as a city-wide signal. Daily PM2.5 falls on warmer (r = −0.652) and windier (r = −0.627) days, mostly because the monsoon is warm, windy and clean.
 
@@ -82,7 +83,7 @@ The target for sensor $s$ on day $D$ is the mean of its 24 hourly readings on da
 
 After cleaning, the feature table holds 4,027 labelled sensor-days.
 
-**Leakage rule.** Leakage means letting the model see information it would not have at forecast time. Every history feature for day $D$ uses only hours before 00:00 on day $D$. Only the `fc_*` columns use hours inside day $D$. In training and evaluation those columns hold the recorded weather for day $D$, standing in for a weather forecast. This is called *perfect prognosis*. The live app uses Open-Meteo's actual forecast for day $D$ instead, so live accuracy will be somewhat lower than the scores in this report (Section 10).
+**Leakage rule.** Leakage means letting the model see information it would not have at forecast time. Every history feature for day $D$ uses only hours before 00:00 on day $D$. Only the `fc_*` columns use hours inside day $D$. In training and evaluation those columns hold the recorded weather for day $D$, standing in for a weather forecast. (Weather and CAMS were downloaded up to 7 November 2026, so for the five final-test rows on 8 November these columns are missing and are filled with training medians.) This is called *perfect prognosis*. The live app uses Open-Meteo's actual forecast for day $D$ instead, so live accuracy will be somewhat lower than the scores in this report (Section 10).
 
 **Scaling.** `src/models/dataset.py::Preprocessor` fills missing values with the training median and standardises each column to mean 0 and standard deviation 1. Site columns pass through unscaled. The preprocessor is fitted on the training rows of each split only.
 
@@ -90,7 +91,7 @@ After cleaning, the feature table holds 4,027 labelled sensor-days.
 
 Rows are split by date, never at random, and all sensors share the same cut dates (`src/data/split.py::project_splits`).
 
-- **Cross-validation (CV):** eight rolling-origin folds (Tashman, 2000). In each fold the model learns from all days up to one day before a 30-day block and is then scored on that block; the skipped day keeps training and test rows apart. The blocks run from 1 January to 28 August 2026, so they cover winter smog, the spring transition and the monsoon. Pooled together, the eight test blocks hold 1,458 sensor-days over 240 dates. Every model setting was chosen on these folds.
+- **Cross-validation (CV):** eight rolling-origin folds (Tashman, 2000). In each fold the model learns from all days up to two days before a 30-day block, skips the day in between, and is then scored on that block; the skipped day keeps training and test rows apart. The blocks run from 1 January to 28 August 2026, so they cover winter smog, the spring transition and the monsoon. Pooled together, the eight test blocks hold 1,458 sensor-days over 240 dates. Every model setting was chosen on these folds.
 - **Final test:** 1 September to 8 November 2026, 442 sensor-days over 69 dates. Each model was trained on all 3,585 labelled rows before 1 September and scored once, after every choice had been frozen. The script `src/evaluate/final_test.py` refuses to run a second time (unless `--force`).
 
 A single summer validation block was considered and rejected: June to August 2026 contained no Unhealthy days at all, so it could not show how a model behaves in smog.
@@ -270,13 +271,13 @@ The held-back rows are the *latest* ones, not a random 15%. Neighbouring days ar
 
 ## Target scaling and the residual target
 
-PM2.5 runs from about 5 to 250 µg/m³. The network learns the standardised target $\tilde y = (y - \mu)/\sigma$, with $\mu$ and $\sigma$ taken from the training rows, and `predict` maps the output back to µg/m³. This lets one learning rate work regardless of the units.
+As a daily mean, PM2.5 in our data runs from about 1 to 190 µg/m³. The network learns the standardised target $\tilde y = (y - \mu)/\sigma$, with $\mu$ and $\sigma$ taken from the training rows, and `predict` maps the output back to µg/m³. This lets one learning rate work regardless of the units.
 
 The tuned network makes one further change, in the wrapper `variant.py` (`MLPVariant`). Instead of the PM2.5 level, it learns the *residual*: the gap between the target and a straight-line persistence forecast,
 
 $$y_{\text{res}} = y - (a + b\, x_{\text{prev}}),$$
 
-where $x_{\text{prev}}$ is yesterday's average PM2.5 and $(a, b)$ are fitted by least squares on the training rows only. At prediction time the line is added back. The wrapper also drops three calendar features (day-of-year sine and cosine, and month), which leaves 55 inputs. Section 5 explains why both changes were made. In the final training run the residual's standard deviation was 16.8 µg/m³, so the losses in the figures are in units of that size.
+where $x_{\text{prev}}$ is yesterday's average PM2.5 and $(a, b)$ are fitted by least squares on the training rows only. At prediction time the line is added back. The wrapper also drops three calendar features (day-of-year sine and cosine, and month), which leaves 55 inputs. Section 5 explains why both changes were made. In the final training run the residual's standard deviation was 16.8 µg/m³, so the losses in the figures are mean squared errors in squared units of that size: a validation loss of 0.035, for example, is a root-mean-square error of about 0.19 × 16.8 ≈ 3.1 µg/m³.
 
 # Verification
 
@@ -331,7 +332,7 @@ A 64-bit float holds about 16 significant digits, so a difference of $10^{-16}$ 
 
 ![Left: training and validation loss per epoch for the NumPy network (wide lines) and PyTorch twin (dashed); the curves lie on top of each other. Right: the absolute difference on a log scale (exact zeros drawn at $10^{-18}$).](results/numpy_vs_torch/loss_curves.png)
 
-Timings vary with machine load (another run measured 0.9 s against 31 s), but NumPy was faster each time. With a 32 × 55 batch, each of the 3,552 steps is dominated by PyTorch's fixed per-call cost (building the autograd graph, optimiser bookkeeping), not by arithmetic. For large networks or on a GPU this would reverse.
+Timings vary with machine load, so these figures are indicative. With a 32 × 55 batch, each of the 3,552 steps is dominated by PyTorch's fixed per-call cost (building the autograd graph, optimiser bookkeeping), not by arithmetic. For large networks or on a GPU this would likely reverse.
 
 # Training and tuning
 
@@ -349,7 +350,7 @@ With default settings (two hidden layers of 64 and 32 units, $\lambda = 10^{-4}$
 
 **Unseen seasons.** The data starts in June 2025. When a fold tests March to May 2026, the training rows contain no March-to-May days at all, so those day-of-year values are new to the model. The network read them as winter and forecast too high. In fold 2 its average error (bias) was +21.9 µg/m³: the training target averaged 54.5 µg/m³ but the test block only 34.3. Removing the three calendar features cut that bias to −2.5 µg/m³, and the fold's MAE fell from 22.3 to 8.9. The tree models are less exposed to this, because a tree cannot extend a trend beyond the values it has seen.
 
-**Overfitting.** On folds 0 to 4, the training MAE was about 3 to 6 µg/m³, while the MAE on the held-back validation rows was about 15 to 18. The network was memorising its training days. A smaller network (one layer of 32 units) with a much larger penalty ($\lambda = 0.1$) closed most of that gap.
+**Overfitting.** On folds 0 to 4, the training MAE was about 3 to 6 µg/m³, while the MAE on the held-back validation rows was about 15 to 18. The network was memorising its training days. A smaller network (one layer of 32 units) with a much larger penalty ($\lambda = 0.1$) brought the pooled CV MAE down from 11.21 to 6.63 µg/m³ (Section 6.2).
 
 The third change, the residual target, makes the task easier. Yesterday's average is by far the strongest single predictor (Section 7). With the residual target the network no longer has to relearn that relationship. It only learns how weather and recent changes move today away from a fitted persistence line. The line is fitted on training rows only, so it adds no leakage.
 
@@ -357,7 +358,7 @@ Feature selection and target transformation are normal, documented modelling cho
 
 ## The search and chosen settings
 
-The search was staged rather than a full grid: first one setting at a time around a baseline, then combinations of the best values. It ran 34 configurations on all eight folds, which took 440.6 seconds in total (`results/tuning/mlp_numpy_trials.csv`). It covered the feature set (all or no calendar), target (level or residual), hidden sizes (16, 32, or 64 and 32), activation (ReLU or tanh), loss (MSE or Huber with $\delta$ of 0.3 or 1), learning rate (0.0003, 0.001, 0.003), batch size (32, 64, 128), L2 (from $10^{-4}$ to 0.1), dropout (0, 0.1, 0.3), early stopping on or off, and the validation fraction (0.15 or 0.25).
+The search was staged rather than a full grid: first one setting at a time around a baseline, then combinations of the best values. It ran 34 configurations on all eight folds, which took 364.8 seconds (`results/tuning/mlp_numpy_trials.csv`); with the seed check added, the whole search took 440.6 seconds (`results/tuning/mlp_numpy_best.json`). It covered the feature set (all or no calendar), target (level or residual), hidden sizes (16, 32, or 64 and 32), activation (ReLU or tanh), loss (MSE or Huber with $\delta$ of 0.3 or 1), learning rate (0.0003, 0.001, 0.003), batch size (32, 64, 128), L2 (from $10^{-4}$ to 0.1), dropout (0, 0.1, 0.3), early stopping on or off, and the validation fraction (0.15 or 0.25).
 
 The best configuration, saved in `results/tuning/mlp_numpy_best.json` and fixed in `src/models/final.py`, is:
 
@@ -415,7 +416,7 @@ Tuning took the network from the worst model to third among the single models, j
 
 ## The ensemble
 
-The NumPy network and Gradient Boosting make different mistakes: the correlation between their predictions is 0.97, not 1. Averaging them cancels part of each one's errors. Several combinations were tried:
+The predictions of the NumPy network and Gradient Boosting correlate at 0.97, not 1, so their errors partly differ, and averaging them cancels part of each one's errors. Several combinations were tried:
 
 | Equal-weight average | CV MAE | Skill |
 |---|---|---|
@@ -424,7 +425,7 @@ The NumPy network and Gradient Boosting make different mistakes: the correlation
 | Gradient Boosting alone | 6.30 | +27.5% |
 | NumPy network alone | 6.63 | +23.8% |
 
-The four-model row and the 0.97 correlation above are not among the saved tuning outputs used elsewhere in this section; both are recomputed from the same saved per-model predictions by `src/evaluate/ensemble_diagnostics.py` and written to `results/tuning/ensemble_diagnostics.json`. The two-model ensemble was chosen. It is within 0.03 µg/m³ of the four-model average, simpler, has the best band scores of any combination (below), and keeps the from-scratch network in the final system. The weights are equal on purpose: fitting weights on the same folds used to judge them would overfit those folds.
+The four-model row and the 0.97 correlation are computed by `src/evaluate/ensemble_diagnostics.py` (`results/tuning/ensemble_diagnostics.json`). The two-model ensemble was chosen. It is within 0.03 µg/m³ of the four-model average, simpler, has the highest band accuracy of the candidate routes (`results/bands/selection.json`), and keeps the from-scratch network in the final system. The weights are equal on purpose: fitting weights on the same folds used to judge them would overfit those folds.
 
 ## Final test
 
@@ -439,7 +440,7 @@ Scored once, on 442 sensor-days from 1 September to 8 November 2026 (`results/fi
 | NumPy network | 4.98 | 6.97 | 0.846 | +14.5% |
 | **Ensemble (GB + NumPy network)** | **4.63** | **6.61** | **0.861** | **+20.5%** |
 
-The ranking from CV holds, except that the NumPy network moves ahead of Random Forest. To be direct about it: the network on its own is slightly behind Gradient Boosting (4.98 against 4.73 µg/m³). Its value lies elsewhere. It is competitive with a strong, mature library model; it beats Random Forest, Ridge and persistence; and adding it to Gradient Boosting improves every metric (MAE 4.73 to 4.63, R² 0.851 to 0.861). The ensemble's MAE is 17% lower than the Ridge baseline's. All errors are smaller than in CV because September to November was cleaner than January to August.
+The ranking from CV holds, except that the NumPy network moves ahead of Random Forest. To be direct about it: the network on its own is slightly behind Gradient Boosting (4.98 against 4.73 µg/m³). Its value lies elsewhere. It is competitive with a strong, mature library model; it beats Random Forest, Ridge and persistence; and adding it to Gradient Boosting improves every metric (MAE 4.73 to 4.63, R² 0.851 to 0.861). The ensemble's MAE is 17% lower than the Ridge baseline's. All errors are smaller than in CV because September to November had no extreme smog: daily PM2.5 varied much less (standard deviation 17.8 against 29.3 µg/m³, highest day 94 against 170), and every model also had more training rows.
 
 ## Air-quality bands, briefly
 
